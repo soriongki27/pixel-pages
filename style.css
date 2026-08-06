@@ -69,6 +69,15 @@ body {
   margin-bottom: 32px;
 }
 
+.logo-mark {
+  display: block;
+  width: 88px;
+  height: 88px;
+  margin: 0 auto 6px;
+  /* a faint ember halo ties the mark to the accent */
+  filter: drop-shadow(0 4px 18px rgba(217, 119, 87, 0.28));
+}
+
 .logo {
   font-family: var(--serif);
   font-optical-sizing: auto;
@@ -420,6 +429,7 @@ body {
 /* ---------- Small screens ---------- */
 @media (max-width: 480px) {
   body { padding: 24px 14px 48px; }
+  .logo-mark { width: 68px; height: 68px; }
   .prompt-card { padding: 22px 20px; }
   .prompt-card::before { font-size: 7rem; }
   .answer-footer { flex-direction: column; align-items: stretch; }
