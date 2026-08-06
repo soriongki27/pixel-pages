@@ -17,11 +17,38 @@
     <header class="topbar">
       <h1 class="logo">PIXEL PAGES</h1>
       <p class="tagline">a q&amp;a writing journal</p>
+      <div class="auth-bar">
+        <button id="auth-open" class="btn auth-open" type="button">Sign in / Sign up</button>
+        <div id="auth-user" class="auth-user hidden">
+          <span id="auth-user-email" class="auth-user-email"></span>
+          <button id="auth-logout" class="btn" type="button">Sign out</button>
+        </div>
+      </div>
       <nav class="nav">
         <button id="nav-write" class="nav-btn active" type="button">Write</button>
         <button id="nav-notebook" class="nav-btn" type="button">Notebook</button>
       </nav>
     </header>
+
+    <!-- AUTH PANEL -->
+    <div id="auth-panel" class="auth-panel hidden">
+      <form id="auth-form" class="auth-form">
+        <h2 id="auth-title" class="label">Log in</h2>
+        <label class="label" for="auth-email">Email</label>
+        <input id="auth-email" class="auth-input" type="email" autocomplete="email" required />
+        <label class="label" for="auth-password">Password</label>
+        <input id="auth-password" class="auth-input" type="password" autocomplete="current-password" minlength="6" required />
+        <p id="auth-error" class="auth-error" aria-live="polite"></p>
+        <div class="auth-actions">
+          <button id="auth-submit" class="btn btn-primary" type="submit">Log in</button>
+          <button id="auth-cancel" class="btn" type="button">Cancel</button>
+        </div>
+        <p class="auth-switch">
+          <span id="auth-switch-text">New here?</span>
+          <button id="auth-toggle" class="auth-link" type="button">Create an account</button>
+        </p>
+      </form>
+    </div>
 
     <!-- WRITE SCREEN -->
     <main id="view-write" class="view">
