@@ -6,8 +6,6 @@
    - Notebook view: browse, delete, export all
    =========================================================== */
 
-const STORAGE_KEY = 'pixelPagesEntries';
-
 // --- Element references ---
 const el = {
   navWrite:    document.getElementById('nav-write'),
@@ -30,18 +28,16 @@ const el = {
 
 let lastPromptIndex = -1;
 
-// --- Storage helpers ---
-function loadEntries() {
-  try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-  } catch (e) {
-    return [];
-  }
-}
+// Active storage backend. Defaults to guest (local); auth.js swaps in a
+// cloud store when a user is signed in.
+let store = window.LocalStore;
 
-function saveEntries(entries) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
-}
+// Control surface used by auth.js to switch backends and re-render.
+window.App = {
+  setStore(s) { store = s; },
+  getStore() { return store; },
+  refresh() { return renderNotebook(); },
+};
 
 // --- Word count ---
 function countWords(text) {
@@ -77,7 +73,7 @@ function formatStamp(iso) {
 }
 
 // --- Save an entry ---
-function saveEntry() {
+async function saveEntry() {
   const answer = el.answer.value.trim();
   const prompt = el.promptText.textContent;
 
@@ -86,15 +82,16 @@ function saveEntry() {
     return;
   }
 
-  const entries = loadEntries();
-  entries.push({
-    id: Date.now(),
-    prompt: prompt,
-    answer: answer,
-    wordCount: countWords(answer),
-    timestamp: new Date().toISOString(),
-  });
-  saveEntries(entries);
+  try {
+    await store.addEntry({
+      prompt: prompt,
+      answer: answer,
+      wordCount: countWords(answer),
+    });
+  } catch (e) {
+    flash("Couldn't save — check your connection and try again.");
+    return; // keep the text in the textarea so nothing is lost
+  }
 
   el.answer.value = '';
   updateWordCount();
@@ -109,8 +106,14 @@ function flash(message) {
 }
 
 // --- Notebook rendering ---
-function renderNotebook() {
-  const entries = loadEntries().slice().reverse(); // newest first
+async function renderNotebook() {
+  let entries;
+  try {
+    entries = (await store.getEntries()).slice().reverse(); // newest first
+  } catch (e) {
+    flash("Couldn't load your notebook — check your connection.");
+    return;
+  }
   el.entries.innerHTML = '';
 
   el.entryTotal.textContent =
@@ -158,16 +161,26 @@ function buildEntryEl(entry) {
   return wrap;
 }
 
-function deleteEntry(id) {
+async function deleteEntry(id) {
   if (!confirm('Delete this entry? This cannot be undone.')) return;
-  const entries = loadEntries().filter((e) => e.id !== id);
-  saveEntries(entries);
+  try {
+    await store.deleteEntry(id);
+  } catch (e) {
+    flash("Couldn't delete — check your connection and try again.");
+    return;
+  }
   renderNotebook();
 }
 
 // --- Export ---
-function exportAll() {
-  const entries = loadEntries();
+async function exportAll() {
+  let entries;
+  try {
+    entries = await store.getEntries();
+  } catch (e) {
+    flash("Couldn't export — check your connection.");
+    return;
+  }
   if (entries.length === 0) {
     flash('Nothing to export yet.');
     switchView('write');
@@ -202,14 +215,14 @@ function switchView(name) {
   el.viewNotebook.classList.toggle('hidden', write);
   el.navWrite.classList.toggle('active', write);
   el.navNotebook.classList.toggle('active', !write);
-  if (!write) renderNotebook();
+  if (!write) return renderNotebook();
 }
 
 // --- Wire up events ---
-function init() {
+async function init() {
   showRandomPrompt();
   updateWordCount();
-  renderNotebook();
+  await renderNotebook();
 
   el.newPrompt.addEventListener('click', showRandomPrompt);
   el.answer.addEventListener('input', updateWordCount);
