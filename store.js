@@ -92,6 +92,7 @@ window.createCloudStore = function createCloudStore(client, userId) {
         prompt: e.prompt,
         answer: e.answer,
         word_count: e.wordCount,
+        created_at: e.timestamp,
       }));
       const { error } = await client.from('entries').insert(rows);
       if (error) throw error;
