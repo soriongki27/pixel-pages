@@ -90,9 +90,17 @@ async function handleSubmit(event) {
       showError('Check your email to confirm your account, then log in.');
       return;
     }
-    await maybeImportGuestEntries(data.session.user.id);
+    let importFailed = false;
+    try {
+      await maybeImportGuestEntries(data.session.user.id);
+    } catch (e) {
+      importFailed = true;
+    }
     closePanel();
     await applySession(data.session);
+    if (importFailed) {
+      flash("Signed in, but importing your previous entries failed — they're still saved on this device.");
+    }
   } else {
     const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
     if (error) { showError(error.message); return; }
