@@ -266,7 +266,13 @@ async function init() {
   updateWordCount();
   await renderNotebook();
 
-  el.newPrompt.addEventListener('click', showRandomPrompt);
+  el.newPrompt.addEventListener('click', () => {
+    showRandomPrompt();
+    el.newPrompt.classList.remove('spin');
+    void el.newPrompt.offsetWidth; // restart the icon spin
+    el.newPrompt.classList.add('spin');
+  });
+  el.newPrompt.addEventListener('animationend', () => el.newPrompt.classList.remove('spin'));
   el.answer.addEventListener('input', updateWordCount);
   el.saveEntry.addEventListener('click', saveEntry);
   el.exportAll.addEventListener('click', exportAll);
