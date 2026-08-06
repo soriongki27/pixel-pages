@@ -1,0 +1,431 @@
+/* ===========================================================
+   Pixel Pages — Cozy literary journal theme
+   Deep-forest ground, cream ink, a single terracotta ember.
+   Fraunces (serif) for what you read; Inter for the chrome.
+   =========================================================== */
+
+:root {
+  --bg:        #1F2A24; /* deep forest at dusk */
+  --surface:   #32443A; /* cards, entries */
+  --field:     #2A3830; /* writing surface, a touch deeper */
+  --primary:   #5B8C5A; /* active nav, quiet accents */
+  --tan:       #C2A878; /* labels, meta, hairlines */
+  --accent:    #D97757; /* the one ember: CTA, ribbons, focus */
+  --text:      #F2EAD3; /* cream ink */
+  --sage:      #A9D18E; /* positive feedback, hovers */
+
+  --hair:      rgba(194, 168, 120, 0.22); /* tan hairline border */
+  --hair-soft: rgba(194, 168, 120, 0.14);
+
+  --serif: 'Fraunces', Georgia, 'Times New Roman', serif;
+  --sans:  'Inter', system-ui, -apple-system, sans-serif;
+
+  --r:    14px;
+  --r-sm: 10px;
+  --r-pill: 999px;
+
+  --shadow:      0 10px 30px rgba(0, 0, 0, 0.35);
+  --shadow-soft: 0 4px 16px rgba(0, 0, 0, 0.22);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  min-height: 100vh;
+  font-family: var(--sans);
+  color: var(--text);
+  background-color: var(--bg);
+  /* warm ember glow spilling from the top, instead of scanlines */
+  background-image:
+    radial-gradient(900px 460px at 50% -8%, rgba(217, 119, 87, 0.14), transparent 62%),
+    radial-gradient(700px 500px at 100% 0%, rgba(91, 140, 90, 0.10), transparent 60%);
+  background-attachment: fixed;
+  display: flex;
+  justify-content: center;
+  padding: 40px 20px 64px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Centered reading column — the page is the journal, cards float on it */
+.console {
+  width: 100%;
+  max-width: 680px;
+}
+
+/* ---------- Top bar ---------- */
+.topbar {
+  text-align: center;
+  border-bottom: 1px solid var(--hair);
+  padding-bottom: 26px;
+  margin-bottom: 32px;
+}
+
+.logo {
+  font-family: var(--serif);
+  font-optical-sizing: auto;
+  font-weight: 600;
+  font-size: clamp(2rem, 6vw, 2.9rem);
+  letter-spacing: -0.01em;
+  margin: 0 0 6px;
+  color: var(--text);
+}
+
+.tagline {
+  font-family: var(--serif);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 1.05rem;
+  color: var(--tan);
+  margin: 0 0 22px;
+}
+
+.nav {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+/* ---------- Buttons ---------- */
+.btn,
+.nav-btn {
+  font-family: var(--sans);
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text);
+  background: transparent;
+  border: 1px solid var(--hair);
+  border-radius: var(--r-sm);
+  padding: 10px 18px;
+  cursor: pointer;
+  transition: background 0.18s ease, border-color 0.18s ease,
+              color 0.18s ease, transform 0.12s ease, box-shadow 0.18s ease;
+}
+
+.nav-btn {
+  border-radius: var(--r-pill);
+  padding: 9px 20px;
+}
+
+.btn:hover,
+.nav-btn:hover {
+  border-color: var(--tan);
+  background: rgba(194, 168, 120, 0.10);
+}
+
+.btn:active,
+.nav-btn:active {
+  transform: translateY(1px);
+}
+
+.nav-btn.active {
+  background: var(--primary);
+  border-color: transparent;
+  color: var(--bg);
+  font-weight: 600;
+}
+
+.nav-btn.active:hover {
+  background: var(--primary);
+}
+
+/* the single strong call to action */
+.btn-primary {
+  background: var(--accent);
+  border-color: transparent;
+  color: var(--bg);
+  font-weight: 600;
+}
+
+.btn-primary:hover {
+  background: #e2865c;
+  border-color: transparent;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(217, 119, 87, 0.28);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+/* keyboard focus — terracotta ring reads clearly on the dark ground */
+.btn:focus-visible,
+.nav-btn:focus-visible,
+.answer-input:focus-visible,
+.entry-delete:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ---------- Shared eyebrow labels ---------- */
+.label {
+  display: block;
+  font-family: var(--sans);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--tan);
+  margin-bottom: 14px;
+}
+
+/* ---------- Views ---------- */
+.view {
+  animation: rise 0.28s ease both;
+}
+
+.hidden {
+  display: none !important;
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ---------- Prompt card — the chapter opener (signature) ---------- */
+.prompt-card {
+  position: relative;
+  overflow: hidden;
+  background: var(--surface);
+  border: 1px solid var(--hair);
+  border-radius: var(--r);
+  padding: 26px 26px 24px;
+  margin-bottom: 30px;
+  box-shadow: var(--shadow-soft);
+}
+
+/* faint quotation-mark watermark */
+.prompt-card::before {
+  content: "\201C";
+  position: absolute;
+  top: -0.34em;
+  right: 0.12em;
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: 9rem;
+  line-height: 1;
+  color: rgba(217, 119, 87, 0.14);
+  pointer-events: none;
+}
+
+/* hairline rule under the eyebrow */
+.prompt-card .label {
+  position: relative;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--hair);
+}
+
+.prompt-card .label::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -1px;
+  width: 42px;
+  height: 2px;
+  background: var(--accent);
+}
+
+.prompt-text {
+  position: relative;
+  font-family: var(--serif);
+  font-optical-sizing: auto;
+  font-weight: 500;
+  font-size: clamp(1.6rem, 4.4vw, 2.35rem);
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  color: var(--text);
+  margin: 18px 0 22px;
+  text-wrap: balance;
+}
+
+/* ---------- Answer block ---------- */
+.answer-block {
+  margin-bottom: 8px;
+}
+
+.answer-input {
+  width: 100%;
+  min-height: 270px;
+  resize: vertical;
+  font-family: var(--serif);
+  font-size: 1.1rem;
+  line-height: 1.7;
+  color: var(--text);
+  background: var(--field);
+  border: 1px solid var(--hair);
+  border-radius: var(--r);
+  padding: 18px 20px;
+  outline: none;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.answer-input::placeholder {
+  color: rgba(242, 234, 211, 0.42);
+  font-style: italic;
+}
+
+.answer-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(217, 119, 87, 0.22);
+}
+
+.answer-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 16px;
+  gap: 12px;
+}
+
+.word-count {
+  font-family: var(--sans);
+  font-size: 0.8rem;
+  color: var(--tan);
+  font-variant-numeric: tabular-nums;
+}
+
+.save-msg {
+  font-family: var(--sans);
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--sage);
+  min-height: 1.2em;
+  margin: 14px 0 0;
+}
+
+/* ---------- Notebook ---------- */
+.notebook-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 22px;
+}
+
+.notebook-head .label {
+  margin-bottom: 0;
+}
+
+.entries {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.entry {
+  background: var(--surface);
+  border: 1px solid var(--hair);
+  border-left: 3px solid var(--accent); /* bookmark ribbon */
+  border-radius: var(--r);
+  padding: 20px 22px;
+  box-shadow: var(--shadow-soft);
+}
+
+.entry-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: space-between;
+  font-family: var(--sans);
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  color: var(--tan);
+  margin-bottom: 12px;
+}
+
+.entry-prompt {
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: 1.3rem;
+  line-height: 1.3;
+  color: var(--text);
+  margin: 0 0 10px;
+}
+
+.entry-answer {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 1.08rem;
+  line-height: 1.65;
+  color: rgba(242, 234, 211, 0.92);
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  margin: 0 0 16px;
+}
+
+.entry-delete {
+  font-family: var(--sans);
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--tan);
+  background: transparent;
+  border: 1px solid var(--hair);
+  border-radius: var(--r-sm);
+  padding: 7px 14px;
+  cursor: pointer;
+  transition: color 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+}
+
+.entry-delete:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: rgba(217, 119, 87, 0.08);
+}
+
+.empty-note {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 1.15rem;
+  color: var(--tan);
+  text-align: center;
+  padding: 48px 16px;
+  border: 1px dashed var(--hair);
+  border-radius: var(--r);
+}
+
+/* ---------- Footer ---------- */
+.footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: space-between;
+  font-family: var(--sans);
+  font-size: 0.75rem;
+  color: var(--tan);
+  border-top: 1px solid var(--hair);
+  margin-top: 36px;
+  padding-top: 18px;
+}
+
+.footer span:last-child {
+  font-style: italic;
+  opacity: 0.85;
+}
+
+/* ---------- Small screens ---------- */
+@media (max-width: 480px) {
+  body { padding: 24px 14px 48px; }
+  .prompt-card { padding: 22px 20px; }
+  .prompt-card::before { font-size: 7rem; }
+  .answer-footer { flex-direction: column; align-items: stretch; }
+  .answer-footer .btn-primary { width: 100%; }
+  .nav-btn { padding: 9px 16px; }
+}
+
+/* ---------- Respect reduced motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}

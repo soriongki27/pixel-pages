@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pixel Pages</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=Inter:wght@400;500;600&display=swap"
+    rel="stylesheet"
+  />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="console">
+    <header class="topbar">
+      <h1 class="logo">PIXEL PAGES</h1>
+      <p class="tagline">a q&amp;a writing journal</p>
+      <nav class="nav">
+        <button id="nav-write" class="nav-btn active" type="button">Write</button>
+        <button id="nav-notebook" class="nav-btn" type="button">Notebook</button>
+      </nav>
+    </header>
+
+    <!-- WRITE SCREEN -->
+    <main id="view-write" class="view">
+      <section class="prompt-card">
+        <span class="label">Today's Prompt</span>
+        <p id="prompt-text" class="prompt-text">&hellip;</p>
+        <button id="new-prompt" class="btn" type="button">New Prompt</button>
+      </section>
+
+      <section class="answer-block">
+        <label class="label" for="answer">Your Answer</label>
+        <textarea
+          id="answer"
+          class="answer-input"
+          placeholder="Take your time. Write what you really think..."
+          spellcheck="true"
+        ></textarea>
+        <div class="answer-footer">
+          <span id="word-count" class="word-count">0 words</span>
+          <button id="save-entry" class="btn btn-primary" type="button">Save Entry</button>
+        </div>
+        <p id="save-msg" class="save-msg" aria-live="polite"></p>
+      </section>
+    </main>
+
+    <!-- NOTEBOOK SCREEN -->
+    <main id="view-notebook" class="view hidden">
+      <div class="notebook-head">
+        <h2 class="label">Your Notebook</h2>
+        <button id="export-all" class="btn" type="button">Export All</button>
+      </div>
+      <div id="entries" class="entries"></div>
+      <p id="empty-note" class="empty-note hidden">
+        No entries yet. Head to Write and answer your first prompt!
+      </p>
+    </main>
+
+    <footer class="footer">
+      <span id="entry-total">0 entries</span>
+      <span>saved on this device only</span>
+    </footer>
+  </div>
+
+  <script src="prompts.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
