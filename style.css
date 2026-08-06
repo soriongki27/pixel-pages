@@ -517,3 +517,53 @@ body {
 }
 
 .auth-link:hover { text-decoration: underline; }
+
+/* Screen title sits centered over the card, echoing the switch line below */
+.auth-heading {
+  text-align: center;
+  margin-bottom: 22px;
+}
+
+/* Field that failed validation — a warmer ember to draw the eye */
+.auth-input.invalid {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(217, 119, 87, 0.22);
+}
+
+/* ---------- Button loading + disabled feedback ---------- */
+.btn:disabled,
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: default;
+  transform: none;
+  box-shadow: none;
+}
+.btn:disabled:hover {
+  background: transparent;
+  border-color: var(--hair);
+}
+.btn-primary:disabled:hover {
+  background: var(--accent);
+  transform: none;
+  box-shadow: none;
+}
+
+.spinner {
+  display: inline-block;
+  width: 0.9em;
+  height: 0.9em;
+  margin-right: 0.5em;
+  vertical-align: -0.14em;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner { animation-duration: 1.5s; }
+}

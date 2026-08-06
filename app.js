@@ -83,9 +83,11 @@ async function saveEntry() {
 
   if (!answer) {
     flash('Write something first!');
+    el.answer.focus();
     return;
   }
 
+  setBtnLoading(el.saveEntry, true, 'Saving…');
   try {
     await store.addEntry({
       prompt: prompt,
@@ -95,6 +97,8 @@ async function saveEntry() {
   } catch (e) {
     flash("Couldn't save — check your connection and try again.");
     return; // keep the text in the textarea so nothing is lost
+  } finally {
+    setBtnLoading(el.saveEntry, false);
   }
 
   el.answer.value = '';
@@ -108,6 +112,27 @@ function flash(message) {
   clearTimeout(flash._t);
   flash._t = setTimeout(() => { el.saveMsg.textContent = ''; }, 2500);
 }
+
+// Shared button feedback: shows a spinner + label while an async action runs
+// and disables the button so it can't be double-fired. Restores the original
+// label when done. Used here and by auth.js.
+function setBtnLoading(btn, loading, loadingText) {
+  if (loading) {
+    if (btn.dataset.label === undefined) btn.dataset.label = btn.textContent;
+    btn.disabled = true;
+    btn.classList.add('is-loading');
+    btn.innerHTML =
+      '<span class="spinner" aria-hidden="true"></span>' + loadingText;
+  } else {
+    btn.disabled = false;
+    btn.classList.remove('is-loading');
+    if (btn.dataset.label !== undefined) {
+      btn.textContent = btn.dataset.label;
+      delete btn.dataset.label;
+    }
+  }
+}
+window.setBtnLoading = setBtnLoading;
 
 // --- Notebook rendering ---
 async function renderNotebook() {

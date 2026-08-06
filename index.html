@@ -33,15 +33,15 @@
     <!-- SIGN IN SCREEN -->
     <main id="view-signin" class="view hidden">
       <div class="auth-panel">
-        <form id="signin-form" class="auth-form">
-          <h2 class="label">Log in</h2>
+        <form id="signin-form" class="auth-form" novalidate>
+          <h2 class="label auth-heading">Log in</h2>
           <label class="label" for="signin-email">Email</label>
           <input id="signin-email" class="auth-input" type="email" autocomplete="email" required />
           <label class="label" for="signin-password">Password</label>
           <input id="signin-password" class="auth-input" type="password" autocomplete="current-password" minlength="6" required />
           <p id="signin-error" class="auth-error" aria-live="polite"></p>
           <div class="auth-actions">
-            <button class="btn btn-primary" type="submit">Log in</button>
+            <button id="signin-submit" class="btn btn-primary" type="submit">Log in</button>
             <button id="signin-cancel" class="btn" type="button">Cancel</button>
           </div>
           <p class="auth-switch">
@@ -55,15 +55,15 @@
     <!-- SIGN UP SCREEN -->
     <main id="view-signup" class="view hidden">
       <div class="auth-panel">
-        <form id="signup-form" class="auth-form">
-          <h2 class="label">Create your account</h2>
+        <form id="signup-form" class="auth-form" novalidate>
+          <h2 class="label auth-heading">Create your account</h2>
           <label class="label" for="signup-email">Email</label>
           <input id="signup-email" class="auth-input" type="email" autocomplete="email" required />
           <label class="label" for="signup-password">Password</label>
           <input id="signup-password" class="auth-input" type="password" autocomplete="new-password" minlength="6" required />
           <p id="signup-error" class="auth-error" aria-live="polite"></p>
           <div class="auth-actions">
-            <button class="btn btn-primary" type="submit">Sign up</button>
+            <button id="signup-submit" class="btn btn-primary" type="submit">Sign up</button>
             <button id="signup-cancel" class="btn" type="button">Cancel</button>
           </div>
           <p class="auth-switch">
