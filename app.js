@@ -15,6 +15,8 @@ const el = {
   viewNotebook:document.getElementById('view-notebook'),
   viewSignin:  document.getElementById('view-signin'),
   viewSignup:  document.getElementById('view-signup'),
+  viewReset:   document.getElementById('view-reset'),
+  viewNewpassword: document.getElementById('view-newpassword'),
 
   promptText:  document.getElementById('prompt-text'),
   newPrompt:   document.getElementById('new-prompt'),
@@ -240,13 +242,17 @@ async function exportAll() {
 // --- View switching ---
 // Shows exactly one screen. The two auth screens are a full-screen takeover:
 // the Write/Notebook nav is hidden while they're up.
+const AUTH_SCREENS = ['signin', 'signup', 'reset', 'newpassword'];
+
 function switchView(name) {
   el.viewWrite.classList.toggle('hidden', name !== 'write');
   el.viewNotebook.classList.toggle('hidden', name !== 'notebook');
   el.viewSignin.classList.toggle('hidden', name !== 'signin');
   el.viewSignup.classList.toggle('hidden', name !== 'signup');
+  el.viewReset.classList.toggle('hidden', name !== 'reset');
+  el.viewNewpassword.classList.toggle('hidden', name !== 'newpassword');
 
-  const isAuth = name === 'signin' || name === 'signup';
+  const isAuth = AUTH_SCREENS.includes(name);
   el.nav.classList.toggle('hidden', isAuth);
   el.navWrite.classList.toggle('active', name === 'write');
   el.navNotebook.classList.toggle('active', name === 'notebook');

@@ -45,6 +45,9 @@
             <button id="signin-cancel" class="btn" type="button">Cancel</button>
           </div>
           <p class="auth-switch">
+            <button id="go-reset" class="auth-link" type="button">Forgot your password?</button>
+          </p>
+          <p class="auth-switch">
             New here?
             <button id="go-signup" class="auth-link" type="button">Create an account</button>
           </p>
@@ -61,6 +64,8 @@
           <input id="signup-email" class="auth-input" type="email" autocomplete="email" required />
           <label class="label" for="signup-password">Password</label>
           <input id="signup-password" class="auth-input" type="password" autocomplete="new-password" minlength="6" required />
+          <label class="label" for="signup-password2">Confirm password</label>
+          <input id="signup-password2" class="auth-input" type="password" autocomplete="new-password" minlength="6" required />
           <p id="signup-error" class="auth-error" aria-live="polite"></p>
           <div class="auth-actions">
             <button id="signup-submit" class="btn btn-primary" type="submit">Sign up</button>
@@ -70,6 +75,45 @@
             Already have an account?
             <button id="go-signin" class="auth-link" type="button">Log in</button>
           </p>
+        </form>
+      </div>
+    </main>
+
+    <!-- RESET PASSWORD (request link) SCREEN -->
+    <main id="view-reset" class="view hidden">
+      <div class="auth-panel">
+        <form id="reset-form" class="auth-form" novalidate>
+          <h2 class="label auth-heading">Reset your password</h2>
+          <p class="auth-intro">Enter your email and we'll send you a link to set a new password.</p>
+          <label class="label" for="reset-email">Email</label>
+          <input id="reset-email" class="auth-input" type="email" autocomplete="email" required />
+          <p id="reset-error" class="auth-error" aria-live="polite"></p>
+          <p id="reset-note" class="auth-note" aria-live="polite"></p>
+          <div class="auth-actions">
+            <button id="reset-submit" class="btn btn-primary" type="submit">Send reset link</button>
+            <button id="reset-cancel" class="btn" type="button">Cancel</button>
+          </div>
+          <p class="auth-switch">
+            Remembered it?
+            <button id="reset-go-signin" class="auth-link" type="button">Log in</button>
+          </p>
+        </form>
+      </div>
+    </main>
+
+    <!-- SET NEW PASSWORD SCREEN (after clicking the reset link) -->
+    <main id="view-newpassword" class="view hidden">
+      <div class="auth-panel">
+        <form id="newpw-form" class="auth-form" novalidate>
+          <h2 class="label auth-heading">Set a new password</h2>
+          <label class="label" for="newpw-password">New password</label>
+          <input id="newpw-password" class="auth-input" type="password" autocomplete="new-password" minlength="6" required />
+          <label class="label" for="newpw-password2">Confirm new password</label>
+          <input id="newpw-password2" class="auth-input" type="password" autocomplete="new-password" minlength="6" required />
+          <p id="newpw-error" class="auth-error" aria-live="polite"></p>
+          <div class="auth-actions">
+            <button id="newpw-submit" class="btn btn-primary" type="submit">Update password</button>
+          </div>
         </form>
       </div>
     </main>

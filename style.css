@@ -524,6 +524,25 @@ body {
   margin-bottom: 22px;
 }
 
+/* Supporting line under a screen title (e.g. the reset instructions) */
+.auth-intro {
+  font-family: var(--sans);
+  font-size: 0.9rem;
+  color: var(--tan);
+  text-align: center;
+  margin: -8px 0 20px;
+}
+
+/* Positive confirmation, in the sage used elsewhere for success */
+.auth-note {
+  font-family: var(--sans);
+  font-size: 0.85rem;
+  color: var(--sage);
+  min-height: 1.2em;
+  margin: 8px 0 0;
+}
+.auth-note:empty { display: none; }
+
 /* Field that failed validation — a warmer ember to draw the eye */
 .auth-input.invalid {
   border-color: var(--accent);
