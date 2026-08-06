@@ -8,10 +8,13 @@
 
 // --- Element references ---
 const el = {
+  nav:         document.querySelector('.nav'),
   navWrite:    document.getElementById('nav-write'),
   navNotebook: document.getElementById('nav-notebook'),
   viewWrite:   document.getElementById('view-write'),
   viewNotebook:document.getElementById('view-notebook'),
+  viewSignin:  document.getElementById('view-signin'),
+  viewSignup:  document.getElementById('view-signup'),
 
   promptText:  document.getElementById('prompt-text'),
   newPrompt:   document.getElementById('new-prompt'),
@@ -37,6 +40,7 @@ window.App = {
   setStore(s) { store = s; },
   getStore() { return store; },
   refresh() { return renderNotebook(); },
+  showScreen(name) { return switchView(name); },
 };
 
 // --- Word count ---
@@ -209,13 +213,20 @@ async function exportAll() {
 }
 
 // --- View switching ---
+// Shows exactly one screen. The two auth screens are a full-screen takeover:
+// the Write/Notebook nav is hidden while they're up.
 function switchView(name) {
-  const write = name === 'write';
-  el.viewWrite.classList.toggle('hidden', !write);
-  el.viewNotebook.classList.toggle('hidden', write);
-  el.navWrite.classList.toggle('active', write);
-  el.navNotebook.classList.toggle('active', !write);
-  if (!write) return renderNotebook();
+  el.viewWrite.classList.toggle('hidden', name !== 'write');
+  el.viewNotebook.classList.toggle('hidden', name !== 'notebook');
+  el.viewSignin.classList.toggle('hidden', name !== 'signin');
+  el.viewSignup.classList.toggle('hidden', name !== 'signup');
+
+  const isAuth = name === 'signin' || name === 'signup';
+  el.nav.classList.toggle('hidden', isAuth);
+  el.navWrite.classList.toggle('active', name === 'write');
+  el.navNotebook.classList.toggle('active', name === 'notebook');
+
+  if (name === 'notebook') return renderNotebook();
 }
 
 // --- Wire up events ---

@@ -13,41 +13,42 @@ const supabaseClient = window.supabase.createClient(
 
 const a = {
   open:      document.getElementById('auth-open'),
-  panel:     document.getElementById('auth-panel'),
-  form:      document.getElementById('auth-form'),
-  email:     document.getElementById('auth-email'),
-  password:  document.getElementById('auth-password'),
-  submit:    document.getElementById('auth-submit'),
-  cancel:    document.getElementById('auth-cancel'),
-  error:     document.getElementById('auth-error'),
-  title:     document.getElementById('auth-title'),
-  toggle:    document.getElementById('auth-toggle'),
-  switchTxt: document.getElementById('auth-switch-text'),
   userBox:   document.getElementById('auth-user'),
   userEmail: document.getElementById('auth-user-email'),
   logout:    document.getElementById('auth-logout'),
+
+  signinForm:     document.getElementById('signin-form'),
+  signinEmail:    document.getElementById('signin-email'),
+  signinPassword: document.getElementById('signin-password'),
+  signinError:    document.getElementById('signin-error'),
+  signinCancel:   document.getElementById('signin-cancel'),
+  goSignup:       document.getElementById('go-signup'),
+
+  signupForm:     document.getElementById('signup-form'),
+  signupEmail:    document.getElementById('signup-email'),
+  signupPassword: document.getElementById('signup-password'),
+  signupError:    document.getElementById('signup-error'),
+  signupCancel:   document.getElementById('signup-cancel'),
+  goSignin:       document.getElementById('go-signin'),
 };
 
-let mode = 'login'; // 'login' | 'signup'
-
-function setMode(next) {
-  mode = next;
-  const signup = mode === 'signup';
-  a.title.textContent = signup ? 'Create your account' : 'Log in';
-  a.submit.textContent = signup ? 'Sign up' : 'Log in';
-  a.switchTxt.textContent = signup ? 'Already have an account?' : 'New here?';
-  a.toggle.textContent = signup ? 'Log in instead' : 'Create an account';
-  a.password.setAttribute('autocomplete', signup ? 'new-password' : 'current-password');
-  a.error.textContent = '';
+function showSignin() {
+  a.signinError.textContent = '';
+  window.App.showScreen('signin');
+  a.signinEmail.focus();
 }
-
-function openPanel() { a.panel.classList.remove('hidden'); a.email.focus(); }
-function closePanel() {
-  a.panel.classList.add('hidden');
-  a.form.reset();
-  a.error.textContent = '';
+function showSignup() {
+  a.signupError.textContent = '';
+  window.App.showScreen('signup');
+  a.signupEmail.focus();
 }
-function showError(msg) { a.error.textContent = msg; }
+function leaveAuth() {
+  a.signinForm.reset();
+  a.signupForm.reset();
+  a.signinError.textContent = '';
+  a.signupError.textContent = '';
+  window.App.showScreen('write');
+}
 
 // Point the app at the right backend for this session and re-render.
 async function applySession(session) {
@@ -76,36 +77,41 @@ async function maybeImportGuestEntries(userId) {
   await window.LocalStore.clear();
 }
 
-async function handleSubmit(event) {
+async function handleLogin(event) {
   event.preventDefault();
-  showError('');
-  const email = a.email.value.trim();
-  const password = a.password.value;
+  a.signinError.textContent = '';
+  const email = a.signinEmail.value.trim();
+  const password = a.signinPassword.value;
 
-  if (mode === 'signup') {
-    const { data, error } = await supabaseClient.auth.signUp({ email, password });
-    if (error) { showError(error.message); return; }
-    if (!data.session) {
-      // Only happens if email confirmation is on in Supabase.
-      showError('Check your email to confirm your account, then log in.');
-      return;
-    }
-    let importFailed = false;
-    try {
-      await maybeImportGuestEntries(data.session.user.id);
-    } catch (e) {
-      importFailed = true;
-    }
-    closePanel();
-    await applySession(data.session);
-    if (importFailed) {
-      flash("Signed in, but importing your previous entries failed — they're still saved on this device.");
-    }
-  } else {
-    const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
-    if (error) { showError(error.message); return; }
-    closePanel();
-    await applySession(data.session);
+  const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+  if (error) { a.signinError.textContent = error.message; return; }
+  leaveAuth();
+  await applySession(data.session);
+}
+
+async function handleSignup(event) {
+  event.preventDefault();
+  a.signupError.textContent = '';
+  const email = a.signupEmail.value.trim();
+  const password = a.signupPassword.value;
+
+  const { data, error } = await supabaseClient.auth.signUp({ email, password });
+  if (error) { a.signupError.textContent = error.message; return; }
+  if (!data.session) {
+    // Only happens if email confirmation is on in Supabase.
+    a.signupError.textContent = 'Check your email to confirm your account, then log in.';
+    return;
+  }
+  let importFailed = false;
+  try {
+    await maybeImportGuestEntries(data.session.user.id);
+  } catch (e) {
+    importFailed = true;
+  }
+  leaveAuth();
+  await applySession(data.session);
+  if (importFailed) {
+    flash("Signed in, but importing your previous entries failed — they're still saved on this device.");
   }
 }
 
@@ -115,10 +121,13 @@ async function handleLogout() {
 }
 
 async function initAuth() {
-  a.open.addEventListener('click', () => { setMode('login'); openPanel(); });
-  a.cancel.addEventListener('click', closePanel);
-  a.toggle.addEventListener('click', () => setMode(mode === 'login' ? 'signup' : 'login'));
-  a.form.addEventListener('submit', handleSubmit);
+  a.open.addEventListener('click', showSignin);
+  a.signinCancel.addEventListener('click', leaveAuth);
+  a.signupCancel.addEventListener('click', leaveAuth);
+  a.goSignup.addEventListener('click', showSignup);
+  a.goSignin.addEventListener('click', showSignin);
+  a.signinForm.addEventListener('submit', handleLogin);
+  a.signupForm.addEventListener('submit', handleSignup);
   a.logout.addEventListener('click', handleLogout);
 
   const { data } = await supabaseClient.auth.getSession();
