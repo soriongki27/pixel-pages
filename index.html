@@ -147,12 +147,31 @@
           <span class="label">Your Streak</span>
           <button id="share-streak" class="btn" type="button">Share</button>
         </div>
-        <div class="streak-stats">
-          <span class="streak-current"><span class="flame" aria-hidden="true">🔥</span> <b id="streak-current-n">0</b> day streak</span>
-          <span class="streak-stat">Longest <b id="streak-longest-n">0</b></span>
-          <span class="streak-stat"><b id="streak-total-n">0</b> entries</span>
+
+        <div class="streak-body">
+          <div class="streak-stats">
+            <div class="streak-current">
+              <span class="flame" aria-hidden="true">🔥</span>
+              <b id="streak-current-n">0</b>
+              <span class="streak-current-label">day streak</span>
+            </div>
+            <div class="streak-stat">Longest <b id="streak-longest-n">0</b></div>
+            <div class="streak-stat"><b id="streak-total-n">0</b> entries</div>
+          </div>
+
+          <div class="streak-cal">
+            <div class="cal-head">
+              <button id="cal-prev" class="cal-nav" type="button" aria-label="Previous month">◀</button>
+              <span id="cal-month" class="cal-month">—</span>
+              <button id="cal-next" class="cal-nav" type="button" aria-label="Next month">▶</button>
+            </div>
+            <div class="cal-weekdays" aria-hidden="true">
+              <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
+            </div>
+            <div id="cal-grid" class="cal-grid" aria-label="Writing calendar"></div>
+          </div>
         </div>
-        <div id="streak-grid" class="streak-grid" aria-label="Writing activity, last 6 months"></div>
+
         <p id="streak-empty" class="streak-empty hidden">Write today to start your streak.</p>
       </section>
 

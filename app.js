@@ -31,15 +31,21 @@ const el = {
   entryTotal:  document.getElementById('entry-total'),
 
   shareStreak:    document.getElementById('share-streak'),
-  streakGrid:     document.getElementById('streak-grid'),
   streakEmpty:    document.getElementById('streak-empty'),
   streakCurrentN: document.getElementById('streak-current-n'),
   streakLongestN: document.getElementById('streak-longest-n'),
   streakTotalN:   document.getElementById('streak-total-n'),
+  calPrev:        document.getElementById('cal-prev'),
+  calNext:        document.getElementById('cal-next'),
+  calMonth:       document.getElementById('cal-month'),
+  calGrid:        document.getElementById('cal-grid'),
 };
 
-// Holds the most recent streak data so the Share button can render it.
+// Holds the most recent streak data so the Share button and month
+// navigation can render without re-reading the store.
 let lastStreakData = null;
+// The month currently shown in the calendar ({ y, m }); null until first render.
+let viewMonth = null;
 
 let lastPromptIndex = -1;
 
@@ -250,7 +256,16 @@ async function exportAll() {
   URL.revokeObjectURL(url);
 }
 
-// --- Streak heatmap ---
+// --- Streak calendar ---
+// The calendar can browse the last 6 months (current month back through 5
+// months ago). Months are compared as a single integer: year*12 + month.
+function monthBounds() {
+  const t = new Date();
+  const maxIdx = t.getFullYear() * 12 + t.getMonth(); // current month
+  return { maxIdx, minIdx: maxIdx - 5 };
+}
+function viewIdx() { return viewMonth.y * 12 + viewMonth.m; }
+
 async function renderStreak() {
   let entries;
   try {
@@ -267,32 +282,58 @@ async function renderStreak() {
   el.streakTotalN.textContent = data.totalEntries;
   el.streakEmpty.classList.toggle('hidden', data.totalEntries > 0);
 
-  const { columns } = Streak.buildHeatmap(data.countsByDay, new Date());
-  el.streakGrid.innerHTML = '';
-  for (const col of columns) {
-    const colEl = document.createElement('div');
-    colEl.className = 'streak-col';
-    for (const cell of col) {
-      colEl.appendChild(buildStreakCell(cell));
-    }
-    el.streakGrid.appendChild(colEl);
+  if (!viewMonth) {
+    const t = new Date();
+    viewMonth = { y: t.getFullYear(), m: t.getMonth() };
   }
+  renderCalendar();
 }
 
-function buildStreakCell(cell) {
+function renderCalendar() {
+  if (!lastStreakData) return;
+  const grid = Streak.buildMonthGrid(
+    lastStreakData.countsByDay, viewMonth.y, viewMonth.m, new Date()
+  );
+
+  el.calMonth.textContent = grid.label;
+  el.calGrid.innerHTML = '';
+  for (const week of grid.weeks) {
+    for (const cell of week) {
+      el.calGrid.appendChild(buildCalCell(cell));
+    }
+  }
+
+  const { minIdx, maxIdx } = monthBounds();
+  el.calPrev.disabled = viewIdx() <= minIdx;
+  el.calNext.disabled = viewIdx() >= maxIdx;
+}
+
+function buildCalCell(cell) {
   const box = document.createElement('span');
-  box.className = 'streak-cell';
-  if (cell.empty) {
-    box.classList.add('is-empty-slot');
+  box.className = 'cal-cell';
+  if (cell.blank) {
+    box.classList.add('is-blank');
     return box;
   }
+  box.textContent = cell.day;
   box.dataset.level = cell.level;
+  if (cell.isToday) box.classList.add('is-today');
+  if (cell.isFuture) box.classList.add('is-future');
+
   const label = cell.date.toLocaleDateString(undefined, {
     month: 'short', day: 'numeric', year: 'numeric',
   });
   const n = cell.count;
   box.title = `${label} — ${n === 0 ? 'no entries' : n + (n === 1 ? ' entry' : ' entries')}`;
   return box;
+}
+
+function stepMonth(delta) {
+  const { minIdx, maxIdx } = monthBounds();
+  const next = viewIdx() + delta;
+  if (next < minIdx || next > maxIdx) return;
+  viewMonth = { y: Math.floor(next / 12), m: next % 12 };
+  renderCalendar();
 }
 
 // --- View switching ---
@@ -333,6 +374,8 @@ async function init() {
   el.answer.addEventListener('input', updateWordCount);
   el.saveEntry.addEventListener('click', saveEntry);
   el.exportAll.addEventListener('click', exportAll);
+  el.calPrev.addEventListener('click', () => stepMonth(-1));
+  el.calNext.addEventListener('click', () => stepMonth(1));
   el.shareStreak.addEventListener('click', async () => {
     setBtnLoading(el.shareStreak, true, 'Rendering…');
     try {

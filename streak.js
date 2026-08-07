@@ -80,33 +80,42 @@ window.Streak = (function () {
     return longest;
   }
 
-  // Build the heatmap grid: `weeks` columns (oldest first), each a
-  // 7-cell array Sun..Sat. Cells before the first day are { empty:true }.
-  function buildHeatmap(countsByDay, today, weeks) {
-    weeks = weeks || 26;
-    const end = startOfDay(today);
-    // last column ends on the Saturday of this week
-    const endOfWeek = new Date(end.getTime() + (6 - end.getDay()) * DAY_MS);
-    const totalDays = weeks * 7;
-    const start = new Date(endOfWeek.getTime() - (totalDays - 1) * DAY_MS);
+  // Build a familiar month calendar for (year, month): weeks of 7 cells,
+  // Sun..Sat, with leading/trailing { blank:true } padding. Each real day
+  // carries its day-of-month, entry count, intensity level, and flags.
+  function buildMonthGrid(countsByDay, year, month, today) {
+    const first = new Date(year, month, 1);
+    const startWeekday = first.getDay();               // 0 = Sunday
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const todayStart = today ? startOfDay(today) : null;
+    const todayKey = today ? dayKey(today) : null;
 
-    const columns = [];
-    for (let w = 0; w < weeks; w++) {
-      const col = [];
-      for (let d = 0; d < 7; d++) {
-        const date = new Date(start.getTime() + (w * 7 + d) * DAY_MS);
-        if (date.getTime() > end.getTime()) {
-          col.push({ empty: true }); // future days in the current week
-          continue;
-        }
-        const key = dayKey(date);
-        const count = countsByDay.get(key) || 0;
-        col.push({ key, date, count, level: intensityLevel(count) });
-      }
-      columns.push(col);
+    const cells = [];
+    for (let i = 0; i < startWeekday; i++) cells.push({ blank: true });
+    for (let d = 1; d <= daysInMonth; d++) {
+      const date = new Date(year, month, d);
+      const key = dayKey(date);
+      const count = countsByDay.get(key) || 0;
+      cells.push({
+        day: d,
+        key,
+        date,
+        count,
+        level: intensityLevel(count),
+        isToday: key === todayKey,
+        isFuture: todayStart ? date.getTime() > todayStart.getTime() : false,
+      });
     }
-    return { columns };
+    while (cells.length % 7 !== 0) cells.push({ blank: true });
+
+    const weeks = [];
+    for (let i = 0; i < cells.length; i += 7) weeks.push(cells.slice(i, i + 7));
+
+    const label = first.toLocaleDateString(undefined, {
+      month: 'long', year: 'numeric',
+    });
+    return { year, month, weeks, label };
   }
 
-  return { dayKey, intensityLevel, computeStreakData, buildHeatmap };
+  return { dayKey, intensityLevel, computeStreakData, buildMonthGrid };
 })();
