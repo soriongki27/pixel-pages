@@ -27,7 +27,7 @@ window.Share = (function () {
 
   // Written-day level -> fill (matches the on-screen calendar)
   const LEVEL = {
-    1: '#3E5A44', // muted sage
+    1: C.primary, // any entry that day: clearly green
     2: C.sage,
     3: C.accent,
   };
@@ -133,10 +133,8 @@ window.Share = (function () {
           ctx.stroke();
         }
 
-        ctx.fillStyle = c.level >= 2 ? C.bg
-          : c.level === 1 ? C.text
-          : 'rgba(242, 234, 211, 0.55)';
-        ctx.font = `${c.level >= 2 ? 600 : 500} ${numFont}px ${SANS}`;
+        ctx.fillStyle = c.level ? C.bg : 'rgba(242, 234, 211, 0.55)';
+        ctx.font = `${c.level ? 600 : 500} ${numFont}px ${SANS}`;
         ctx.fillText(String(c.day), cx + cell / 2, cy + cell / 2 + 2);
       }
     }
