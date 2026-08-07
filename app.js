@@ -29,7 +29,17 @@ const el = {
   emptyNote:   document.getElementById('empty-note'),
   exportAll:   document.getElementById('export-all'),
   entryTotal:  document.getElementById('entry-total'),
+
+  shareStreak:    document.getElementById('share-streak'),
+  streakGrid:     document.getElementById('streak-grid'),
+  streakEmpty:    document.getElementById('streak-empty'),
+  streakCurrentN: document.getElementById('streak-current-n'),
+  streakLongestN: document.getElementById('streak-longest-n'),
+  streakTotalN:   document.getElementById('streak-total-n'),
 };
+
+// Holds the most recent streak data so the Share button can render it.
+let lastStreakData = null;
 
 let lastPromptIndex = -1;
 
@@ -41,7 +51,7 @@ let store = window.LocalStore;
 window.App = {
   setStore(s) { store = s; },
   getStore() { return store; },
-  refresh() { return renderNotebook(); },
+  refresh() { renderStreak(); return renderNotebook(); },
   showScreen(name) { return switchView(name); },
 };
 
@@ -107,6 +117,7 @@ async function saveEntry() {
   updateWordCount();
   flash('Saved to your notebook!');
   renderNotebook();
+  renderStreak();
 }
 
 function flash(message) {
@@ -239,6 +250,51 @@ async function exportAll() {
   URL.revokeObjectURL(url);
 }
 
+// --- Streak heatmap ---
+async function renderStreak() {
+  let entries;
+  try {
+    entries = await store.getEntries();
+  } catch (e) {
+    return; // streak is non-critical; leave whatever's shown
+  }
+
+  const data = Streak.computeStreakData(entries);
+  lastStreakData = data;
+
+  el.streakCurrentN.textContent = data.currentStreak;
+  el.streakLongestN.textContent = data.longestStreak;
+  el.streakTotalN.textContent = data.totalEntries;
+  el.streakEmpty.classList.toggle('hidden', data.totalEntries > 0);
+
+  const { columns } = Streak.buildHeatmap(data.countsByDay, new Date());
+  el.streakGrid.innerHTML = '';
+  for (const col of columns) {
+    const colEl = document.createElement('div');
+    colEl.className = 'streak-col';
+    for (const cell of col) {
+      colEl.appendChild(buildStreakCell(cell));
+    }
+    el.streakGrid.appendChild(colEl);
+  }
+}
+
+function buildStreakCell(cell) {
+  const box = document.createElement('span');
+  box.className = 'streak-cell';
+  if (cell.empty) {
+    box.classList.add('is-empty-slot');
+    return box;
+  }
+  box.dataset.level = cell.level;
+  const label = cell.date.toLocaleDateString(undefined, {
+    month: 'short', day: 'numeric', year: 'numeric',
+  });
+  const n = cell.count;
+  box.title = `${label} — ${n === 0 ? 'no entries' : n + (n === 1 ? ' entry' : ' entries')}`;
+  return box;
+}
+
 // --- View switching ---
 // Shows exactly one screen. The two auth screens are a full-screen takeover:
 // the Write/Notebook nav is hidden while they're up.
@@ -265,6 +321,7 @@ async function init() {
   showRandomPrompt();
   updateWordCount();
   await renderNotebook();
+  await renderStreak();
 
   el.newPrompt.addEventListener('click', () => {
     showRandomPrompt();
@@ -276,6 +333,18 @@ async function init() {
   el.answer.addEventListener('input', updateWordCount);
   el.saveEntry.addEventListener('click', saveEntry);
   el.exportAll.addEventListener('click', exportAll);
+  el.shareStreak.addEventListener('click', async () => {
+    setBtnLoading(el.shareStreak, true, 'Rendering…');
+    try {
+      const data = lastStreakData ||
+        Streak.computeStreakData(await store.getEntries());
+      await Share.exportStreakImage(data);
+    } catch (e) {
+      flash("Couldn't create the image — try again.");
+    } finally {
+      setBtnLoading(el.shareStreak, false);
+    }
+  });
   el.navWrite.addEventListener('click', () => switchView('write'));
   el.navNotebook.addEventListener('click', () => switchView('notebook'));
 }
