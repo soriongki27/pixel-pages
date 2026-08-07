@@ -418,6 +418,63 @@ body {
   .streak-current-label { flex-basis: auto; }
 }
 
+/* ---------- Minimized streak badge (floats at the side) ---------- */
+.streak-badge {
+  position: fixed;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 12px 14px;
+  background: var(--surface);
+  border: 1px solid rgba(217, 119, 87, 0.42);
+  border-radius: var(--r-pill);
+  box-shadow: var(--shadow-soft);
+  color: var(--text);
+  cursor: pointer;
+  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.streak-badge:hover {
+  border-color: var(--accent);
+  transform: translateY(-50%) scale(1.06);
+  box-shadow: var(--shadow);
+}
+.streak-badge:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.streak-badge .badge-flame {
+  font-size: 1.3rem;
+  line-height: 1;
+}
+.streak-badge .badge-n {
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: 1.35rem;
+  line-height: 1;
+  color: var(--accent);
+}
+
+/* On narrower screens there's no side margin — tuck it into the corner */
+@media (max-width: 900px) {
+  .streak-badge {
+    top: auto;
+    bottom: 18px;
+    right: 16px;
+    transform: none;
+    flex-direction: row;
+    gap: 6px;
+    padding: 9px 14px;
+  }
+  .streak-badge:hover {
+    transform: scale(1.06);
+  }
+}
+
 .prompt-card {
   position: relative;
   overflow: hidden;

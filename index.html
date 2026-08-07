@@ -49,6 +49,7 @@
       <nav class="nav">
         <button id="nav-write" class="nav-btn active" type="button">Write</button>
         <button id="nav-notebook" class="nav-btn" type="button">Notebook</button>
+        <button id="nav-streak" class="nav-btn" type="button">Streak</button>
       </nav>
     </header>
 
@@ -142,39 +143,6 @@
 
     <!-- WRITE SCREEN -->
     <main id="view-write" class="view">
-      <section class="streak-card">
-        <div class="streak-head">
-          <span class="label">Your Streak</span>
-          <button id="share-streak" class="btn" type="button">Share</button>
-        </div>
-
-        <div class="streak-body">
-          <div class="streak-stats">
-            <div class="streak-current">
-              <span class="flame" aria-hidden="true">🔥</span>
-              <b id="streak-current-n">0</b>
-              <span class="streak-current-label">day streak</span>
-            </div>
-            <div class="streak-stat">Longest <b id="streak-longest-n">0</b></div>
-            <div class="streak-stat"><b id="streak-total-n">0</b> entries</div>
-          </div>
-
-          <div class="streak-cal">
-            <div class="cal-head">
-              <button id="cal-prev" class="cal-nav" type="button" aria-label="Previous month">◀</button>
-              <span id="cal-month" class="cal-month">—</span>
-              <button id="cal-next" class="cal-nav" type="button" aria-label="Next month">▶</button>
-            </div>
-            <div class="cal-weekdays" aria-hidden="true">
-              <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
-            </div>
-            <div id="cal-grid" class="cal-grid" aria-label="Writing calendar"></div>
-          </div>
-        </div>
-
-        <p id="streak-empty" class="streak-empty hidden">Write today to start your streak.</p>
-      </section>
-
       <section class="prompt-card">
         <span class="label">Today's Prompt</span>
         <p id="prompt-text" class="prompt-text">&hellip;</p>
@@ -216,11 +184,53 @@
       </p>
     </main>
 
+    <!-- STREAK SCREEN (detailed view) -->
+    <main id="view-streak" class="view hidden">
+      <section class="streak-card">
+        <div class="streak-head">
+          <span class="label">Your Streak</span>
+          <button id="share-streak" class="btn" type="button">Share</button>
+        </div>
+
+        <div class="streak-body">
+          <div class="streak-stats">
+            <div class="streak-current">
+              <span class="flame" aria-hidden="true">🔥</span>
+              <b id="streak-current-n">0</b>
+              <span class="streak-current-label">day streak</span>
+            </div>
+            <div class="streak-stat">Longest <b id="streak-longest-n">0</b></div>
+            <div class="streak-stat"><b id="streak-total-n">0</b> entries</div>
+          </div>
+
+          <div class="streak-cal">
+            <div class="cal-head">
+              <button id="cal-prev" class="cal-nav" type="button" aria-label="Previous month">◀</button>
+              <span id="cal-month" class="cal-month">—</span>
+              <button id="cal-next" class="cal-nav" type="button" aria-label="Next month">▶</button>
+            </div>
+            <div class="cal-weekdays" aria-hidden="true">
+              <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
+            </div>
+            <div id="cal-grid" class="cal-grid" aria-label="Writing calendar"></div>
+          </div>
+        </div>
+
+        <p id="streak-empty" class="streak-empty hidden">Write today to start your streak.</p>
+      </section>
+    </main>
+
     <footer class="footer">
       <span id="entry-total">0 entries</span>
       <span>saved on this device only</span>
     </footer>
   </div>
+
+  <!-- Minimized streak badge: floats at the side, opens the Streak view -->
+  <button id="streak-badge" class="streak-badge hidden" type="button" aria-label="View your writing streak">
+    <span class="badge-flame" aria-hidden="true">🔥</span>
+    <span class="badge-n" id="badge-n">0</span>
+  </button>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="config.js"></script>
@@ -228,6 +238,8 @@
   <script src="store.js"></script>
   <script src="streak.js"></script>
   <script src="share.js"></script>
+  <script src="streak-detail.js"></script>
+  <script src="streak-badge.js"></script>
   <script src="app.js"></script>
   <script src="auth.js"></script>
 </body>

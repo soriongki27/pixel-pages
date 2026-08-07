@@ -11,8 +11,10 @@ const el = {
   nav:         document.querySelector('.nav'),
   navWrite:    document.getElementById('nav-write'),
   navNotebook: document.getElementById('nav-notebook'),
+  navStreak:   document.getElementById('nav-streak'),
   viewWrite:   document.getElementById('view-write'),
   viewNotebook:document.getElementById('view-notebook'),
+  viewStreak:  document.getElementById('view-streak'),
   viewSignin:  document.getElementById('view-signin'),
   viewSignup:  document.getElementById('view-signup'),
   viewReset:   document.getElementById('view-reset'),
@@ -29,23 +31,14 @@ const el = {
   emptyNote:   document.getElementById('empty-note'),
   exportAll:   document.getElementById('export-all'),
   entryTotal:  document.getElementById('entry-total'),
-
-  shareStreak:    document.getElementById('share-streak'),
-  streakEmpty:    document.getElementById('streak-empty'),
-  streakCurrentN: document.getElementById('streak-current-n'),
-  streakLongestN: document.getElementById('streak-longest-n'),
-  streakTotalN:   document.getElementById('streak-total-n'),
-  calPrev:        document.getElementById('cal-prev'),
-  calNext:        document.getElementById('cal-next'),
-  calMonth:       document.getElementById('cal-month'),
-  calGrid:        document.getElementById('cal-grid'),
 };
 
-// Holds the most recent streak data so the Share button and month
-// navigation can render without re-reading the store.
+// Holds the most recent streak data so badge visibility can be decided
+// without re-reading the store. The detailed view and the badge each own
+// their own DOM (see streak-detail.js / streak-badge.js).
 let lastStreakData = null;
-// The month currently shown in the calendar ({ y, m }); null until first render.
-let viewMonth = null;
+// Tracks the visible main screen so we know when to show the side badge.
+let currentScreen = 'write';
 
 let lastPromptIndex = -1;
 
@@ -256,16 +249,10 @@ async function exportAll() {
   URL.revokeObjectURL(url);
 }
 
-// --- Streak calendar ---
-// The calendar can browse the last 6 months (current month back through 5
-// months ago). Months are compared as a single integer: year*12 + month.
-function monthBounds() {
-  const t = new Date();
-  const maxIdx = t.getFullYear() * 12 + t.getMonth(); // current month
-  return { maxIdx, minIdx: maxIdx - 5 };
-}
-function viewIdx() { return viewMonth.y * 12 + viewMonth.m; }
-
+// --- Streak ---
+// Thin coordinator: read the store once, compute streak data, and hand it to
+// the two streak modules (detailed view + side badge). All streak rendering
+// lives in streak-detail.js and streak-badge.js.
 async function renderStreak() {
   let entries;
   try {
@@ -276,74 +263,29 @@ async function renderStreak() {
 
   const data = Streak.computeStreakData(entries);
   lastStreakData = data;
-
-  el.streakCurrentN.textContent = data.currentStreak;
-  el.streakLongestN.textContent = data.longestStreak;
-  el.streakTotalN.textContent = data.totalEntries;
-  el.streakEmpty.classList.toggle('hidden', data.totalEntries > 0);
-
-  if (!viewMonth) {
-    const t = new Date();
-    viewMonth = { y: t.getFullYear(), m: t.getMonth() };
-  }
-  renderCalendar();
+  StreakDetail.render(data);
+  StreakBadge.render(data);
+  updateBadgeVisibility();
 }
 
-function renderCalendar() {
-  if (!lastStreakData) return;
-  const grid = Streak.buildMonthGrid(
-    lastStreakData.countsByDay, viewMonth.y, viewMonth.m, new Date()
-  );
-
-  el.calMonth.textContent = grid.label;
-  el.calGrid.innerHTML = '';
-  for (const week of grid.weeks) {
-    for (const cell of week) {
-      el.calGrid.appendChild(buildCalCell(cell));
-    }
-  }
-
-  const { minIdx, maxIdx } = monthBounds();
-  el.calPrev.disabled = viewIdx() <= minIdx;
-  el.calNext.disabled = viewIdx() >= maxIdx;
-}
-
-function buildCalCell(cell) {
-  const box = document.createElement('span');
-  box.className = 'cal-cell';
-  if (cell.blank) {
-    box.classList.add('is-blank');
-    return box;
-  }
-  box.textContent = cell.day;
-  box.dataset.level = cell.level;
-  if (cell.isToday) box.classList.add('is-today');
-  if (cell.isFuture) box.classList.add('is-future');
-
-  const label = cell.date.toLocaleDateString(undefined, {
-    month: 'short', day: 'numeric', year: 'numeric',
-  });
-  const n = cell.count;
-  box.title = `${label} — ${n === 0 ? 'no entries' : n + (n === 1 ? ' entry' : ' entries')}`;
-  return box;
-}
-
-function stepMonth(delta) {
-  const { minIdx, maxIdx } = monthBounds();
-  const next = viewIdx() + delta;
-  if (next < minIdx || next > maxIdx) return;
-  viewMonth = { y: Math.floor(next / 12), m: next % 12 };
-  renderCalendar();
+// The side badge shows on the Write/Notebook screens once there's at least
+// one entry — it's hidden on auth screens and on the Streak view itself.
+function updateBadgeVisibility() {
+  const onMainScreen = currentScreen === 'write' || currentScreen === 'notebook';
+  const hasEntries = !!lastStreakData && lastStreakData.totalEntries > 0;
+  StreakBadge.setVisible(onMainScreen && hasEntries);
 }
 
 // --- View switching ---
-// Shows exactly one screen. The two auth screens are a full-screen takeover:
-// the Write/Notebook nav is hidden while they're up.
+// Shows exactly one screen. The auth screens are a full-screen takeover:
+// the main nav is hidden while they're up.
 const AUTH_SCREENS = ['signin', 'signup', 'reset', 'newpassword'];
 
 function switchView(name) {
+  currentScreen = name;
   el.viewWrite.classList.toggle('hidden', name !== 'write');
   el.viewNotebook.classList.toggle('hidden', name !== 'notebook');
+  el.viewStreak.classList.toggle('hidden', name !== 'streak');
   el.viewSignin.classList.toggle('hidden', name !== 'signin');
   el.viewSignup.classList.toggle('hidden', name !== 'signup');
   el.viewReset.classList.toggle('hidden', name !== 'reset');
@@ -353,12 +295,19 @@ function switchView(name) {
   el.nav.classList.toggle('hidden', isAuth);
   el.navWrite.classList.toggle('active', name === 'write');
   el.navNotebook.classList.toggle('active', name === 'notebook');
+  el.navStreak.classList.toggle('active', name === 'streak');
+
+  updateBadgeVisibility();
 
   if (name === 'notebook') return renderNotebook();
+  if (name === 'streak') return renderStreak();
 }
 
 // --- Wire up events ---
 async function init() {
+  StreakDetail.init();
+  StreakBadge.init({ onOpen: () => switchView('streak') });
+
   showRandomPrompt();
   updateWordCount();
   await renderNotebook();
@@ -374,22 +323,9 @@ async function init() {
   el.answer.addEventListener('input', updateWordCount);
   el.saveEntry.addEventListener('click', saveEntry);
   el.exportAll.addEventListener('click', exportAll);
-  el.calPrev.addEventListener('click', () => stepMonth(-1));
-  el.calNext.addEventListener('click', () => stepMonth(1));
-  el.shareStreak.addEventListener('click', async () => {
-    setBtnLoading(el.shareStreak, true, 'Rendering…');
-    try {
-      const data = lastStreakData ||
-        Streak.computeStreakData(await store.getEntries());
-      await Share.exportStreakImage(data);
-    } catch (e) {
-      flash("Couldn't create the image — try again.");
-    } finally {
-      setBtnLoading(el.shareStreak, false);
-    }
-  });
   el.navWrite.addEventListener('click', () => switchView('write'));
   el.navNotebook.addEventListener('click', () => switchView('notebook'));
+  el.navStreak.addEventListener('click', () => switchView('streak'));
 }
 
 init();
