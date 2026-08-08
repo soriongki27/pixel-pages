@@ -146,6 +146,7 @@
       <section class="prompt-card">
         <span class="label">Today's Prompt</span>
         <p id="prompt-text" class="prompt-text">&hellip;</p>
+        <p id="all-done" class="all-done hidden">You've answered every prompt! 🎉</p>
         <button id="new-prompt" class="btn prompt-refresh" type="button">
           <svg class="refresh-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -231,6 +232,16 @@
     <span class="badge-flame" aria-hidden="true">🔥</span>
     <span class="badge-n" id="badge-n">0</span>
   </button>
+
+  <!-- Saved confirmation modal -->
+  <div id="saved-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="saved-modal-title">
+    <div class="modal-card">
+      <span class="modal-check" aria-hidden="true">✓</span>
+      <p id="saved-modal-title" class="modal-title">Saved to your notebook!</p>
+      <p class="modal-text">Your page has been kept. Here's your next prompt.</p>
+      <button id="saved-modal-ok" class="btn btn-primary" type="button">OK</button>
+    </div>
+  </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="config.js"></script>

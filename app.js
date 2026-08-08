@@ -21,11 +21,15 @@ const el = {
   viewNewpassword: document.getElementById('view-newpassword'),
 
   promptText:  document.getElementById('prompt-text'),
+  allDone:     document.getElementById('all-done'),
   newPrompt:   document.getElementById('new-prompt'),
   answer:      document.getElementById('answer'),
   wordCount:   document.getElementById('word-count'),
   saveEntry:   document.getElementById('save-entry'),
   saveMsg:     document.getElementById('save-msg'),
+
+  savedModal:  document.getElementById('saved-modal'),
+  savedModalOk:document.getElementById('saved-modal-ok'),
 
   entries:     document.getElementById('entries'),
   emptyNote:   document.getElementById('empty-note'),
@@ -42,6 +46,12 @@ let currentScreen = 'write';
 
 let lastPromptIndex = -1;
 
+// Set of prompt texts the user has already answered. A prompt counts as
+// answered once it appears in a saved entry, so this is rebuilt from the store
+// on init, after every save, and after every delete. Prompts in this set are
+// never shown on the Write screen again (until their entry is deleted).
+let answeredPrompts = new Set();
+
 // Active storage backend. Defaults to guest (local); auth.js swaps in a
 // cloud store when a user is signed in.
 let store = window.LocalStore;
@@ -50,7 +60,12 @@ let store = window.LocalStore;
 window.App = {
   setStore(s) { store = s; },
   getStore() { return store; },
-  refresh() { renderStreak(); return renderNotebook(); },
+  async refresh() {
+    await refreshAnswered();
+    showRandomPrompt();
+    renderStreak();
+    return renderNotebook();
+  },
   showScreen(name) { return switchView(name); },
 };
 
@@ -67,15 +82,57 @@ function updateWordCount() {
 }
 
 // --- Prompts ---
+// Indexes of prompts the user hasn't answered yet — the pool we draw from.
+function unansweredIndexes() {
+  const out = [];
+  for (let i = 0; i < PROMPTS.length; i++) {
+    if (!answeredPrompts.has(PROMPTS[i])) out.push(i);
+  }
+  return out;
+}
+
+// Rebuild the answered set from the store. Call whenever entries change.
+async function refreshAnswered() {
+  try {
+    const entries = await store.getEntries();
+    answeredPrompts = new Set(entries.map((e) => e.prompt));
+  } catch (e) {
+    // Non-critical: keep whatever we had rather than wiping the pool.
+  }
+}
+
 function showRandomPrompt() {
-  if (PROMPTS.length === 0) return;
+  const pool = unansweredIndexes();
+
+  // No prompts left to answer → switch to the "all done" state.
+  if (pool.length === 0) {
+    setAllDone(true);
+    return;
+  }
+  setAllDone(false);
+
   let idx;
-  // avoid repeating the same prompt twice in a row
+  // avoid repeating the same prompt twice in a row (when the pool allows it)
   do {
-    idx = Math.floor(Math.random() * PROMPTS.length);
-  } while (idx === lastPromptIndex && PROMPTS.length > 1);
+    idx = pool[Math.floor(Math.random() * pool.length)];
+  } while (idx === lastPromptIndex && pool.length > 1);
   lastPromptIndex = idx;
   el.promptText.textContent = PROMPTS[idx];
+}
+
+// Toggle the Write screen between the normal writing state and the
+// "you've answered everything" state (prompt hidden, inputs disabled).
+function setAllDone(done) {
+  el.promptText.classList.toggle('hidden', done);
+  el.allDone.classList.toggle('hidden', !done);
+  el.newPrompt.disabled = done;
+  el.saveEntry.disabled = done;
+  el.answer.disabled = done;
+  if (done) {
+    lastPromptIndex = -1;
+    el.answer.value = '';
+    updateWordCount();
+  }
 }
 
 // --- Date formatting ---
@@ -114,9 +171,25 @@ async function saveEntry() {
 
   el.answer.value = '';
   updateWordCount();
-  flash('Saved to your notebook!');
+
+  // The prompt just answered is now off the table. Rebuild the answered set,
+  // then auto-advance to the next unanswered prompt (or the all-done state).
+  await refreshAnswered();
+  showRandomPrompt();
+
+  showSavedModal();
   renderNotebook();
   renderStreak();
+}
+
+// --- Saved modal ---
+function showSavedModal() {
+  el.savedModal.classList.remove('hidden');
+  el.savedModalOk.focus();
+}
+
+function hideSavedModal() {
+  el.savedModal.classList.add('hidden');
 }
 
 function flash(message) {
@@ -210,7 +283,13 @@ async function deleteEntry(id) {
     flash("Couldn't delete — check your connection and try again.");
     return;
   }
+  // That prompt is available again. If the Write screen was showing the
+  // all-done state, bring a fresh prompt back; otherwise leave the current
+  // prompt untouched so we don't interrupt any in-progress writing.
+  await refreshAnswered();
+  if (!el.allDone.classList.contains('hidden')) showRandomPrompt();
   renderNotebook();
+  renderStreak();
 }
 
 // --- Export ---
@@ -308,6 +387,7 @@ async function init() {
   StreakDetail.init();
   StreakBadge.init({ onOpen: () => switchView('streak') });
 
+  await refreshAnswered();
   showRandomPrompt();
   updateWordCount();
   await renderNotebook();
@@ -322,6 +402,17 @@ async function init() {
   el.newPrompt.addEventListener('animationend', () => el.newPrompt.classList.remove('spin'));
   el.answer.addEventListener('input', updateWordCount);
   el.saveEntry.addEventListener('click', saveEntry);
+
+  // Saved modal: dismiss on OK, on overlay click, or Esc.
+  el.savedModalOk.addEventListener('click', hideSavedModal);
+  el.savedModal.addEventListener('click', (e) => {
+    if (e.target === el.savedModal) hideSavedModal();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !el.savedModal.classList.contains('hidden')) {
+      hideSavedModal();
+    }
+  });
   el.exportAll.addEventListener('click', exportAll);
   el.navWrite.addEventListener('click', () => switchView('write'));
   el.navNotebook.addEventListener('click', () => switchView('notebook'));
