@@ -537,7 +537,9 @@ body {
 
 .answer-input {
   width: 100%;
-  min-height: 270px;
+  /* the writing space dominates the screen: about half the viewport,
+     with a comfortable floor on short windows */
+  min-height: clamp(320px, 52vh, 640px);
   resize: vertical;
   font-family: var(--serif);
   font-size: 1.1rem;
@@ -887,4 +889,92 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .spinner { animation-duration: 1.5s; }
+}
+
+/* ---------- "All prompts answered" state ---------- */
+.all-done {
+  position: relative;
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: clamp(1.4rem, 3.6vw, 1.9rem);
+  line-height: 1.3;
+  color: var(--sage);
+  margin: 18px 0 22px;
+  text-wrap: balance;
+}
+
+/* ---------- Saved confirmation modal ---------- */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(15, 20, 17, 0.66);
+  backdrop-filter: blur(2px);
+  animation: modal-fade 0.2s ease both;
+}
+
+@keyframes modal-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.modal-card {
+  width: 100%;
+  max-width: 380px;
+  text-align: center;
+  background: var(--surface);
+  border: 1px solid var(--hair);
+  border-radius: var(--r);
+  padding: 30px 28px 26px;
+  box-shadow: var(--shadow);
+  animation: modal-pop 0.24s cubic-bezier(0.2, 0.8, 0.3, 1.2) both;
+}
+
+@keyframes modal-pop {
+  from { opacity: 0; transform: translateY(10px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.modal-check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  margin: 0 auto 14px;
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--bg);
+  background: var(--sage);
+  border-radius: var(--r-pill);
+  box-shadow: 0 6px 18px rgba(169, 209, 142, 0.3);
+}
+
+.modal-title {
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: 1.5rem;
+  line-height: 1.25;
+  color: var(--text);
+  margin: 0 0 8px;
+}
+
+.modal-text {
+  font-family: var(--sans);
+  font-size: 0.92rem;
+  color: var(--tan);
+  margin: 0 0 22px;
+}
+
+.modal-card .btn-primary {
+  min-width: 120px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .modal-overlay,
+  .modal-card { animation: none; }
 }
