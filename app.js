@@ -26,7 +26,7 @@ const el = {
   answer:      document.getElementById('answer'),
   wordCount:   document.getElementById('word-count'),
   saveEntry:   document.getElementById('save-entry'),
-  saveMsg:     document.getElementById('save-msg'),
+  flashMsg:    document.getElementById('flash-msg'),
 
   savedModal:  document.getElementById('saved-modal'),
   savedModalOk:document.getElementById('saved-modal-ok'),
@@ -59,8 +59,16 @@ let lastPromptIndex = -1;
 // never shown on the Write screen again (until their entry is deleted).
 let answeredPrompts = new Set();
 
-// Set of selected entry IDs for collection export
+// Set of selected entry IDs for collection export. Entry ids are opaque and
+// backend-dependent — LocalStore uses numbers (Date.now()), CloudStore uses
+// uuid strings — and DOM datasets are always strings, so every id is
+// normalised through entryKey() before it touches this set.
 let selectedEntryIds = new Set();
+
+// Canonical key for an entry id, regardless of backend or DOM round-tripping.
+function entryKey(id) {
+  return String(id);
+}
 
 // Active storage backend. Defaults to guest (local); auth.js swaps in a
 // cloud store when a user is signed in.
@@ -202,10 +210,18 @@ function hideSavedModal() {
   el.savedModal.classList.add('hidden');
 }
 
+// Transient status toast. Rendered outside every view so messages raised from
+// the Notebook (exports) or an auth screen are actually seen.
 function flash(message) {
-  el.saveMsg.textContent = message;
+  // Reveal the live region before the text changes so screen readers announce
+  // it (a visibility:hidden region is outside the accessibility tree).
+  el.flashMsg.classList.toggle('is-visible', !!message);
+  el.flashMsg.textContent = message;
   clearTimeout(flash._t);
-  flash._t = setTimeout(() => { el.saveMsg.textContent = ''; }, 2500);
+  flash._t = setTimeout(() => {
+    el.flashMsg.textContent = '';
+    el.flashMsg.classList.remove('is-visible');
+  }, 3500);
 }
 
 // Updates visibility and content of selection controls based on selectedEntryIds
@@ -225,7 +241,7 @@ function updateSelectionUI() {
   document.querySelectorAll('.entry').forEach((entryEl) => {
     const checkbox = entryEl.querySelector('.entry-checkbox');
     if (checkbox) {
-      const isSelected = selectedEntryIds.has(checkbox.dataset.entryId);
+      const isSelected = selectedEntryIds.has(entryKey(checkbox.dataset.entryId));
       entryEl.classList.toggle('selected', isSelected);
       checkbox.checked = isSelected;
     }
@@ -239,7 +255,7 @@ function clearSelection() {
 
 async function getSelectedEntries() {
   const allEntries = await store.getEntries();
-  return allEntries.filter((e) => selectedEntryIds.has(e.id));
+  return allEntries.filter((e) => selectedEntryIds.has(entryKey(e.id)));
 }
 
 // Shared button feedback: shows a spinner + label while an async action runs
@@ -308,9 +324,9 @@ function buildEntryEl(entry) {
         e.target.checked = false;
         return;
       }
-      selectedEntryIds.add(entry.id);
+      selectedEntryIds.add(entryKey(entry.id));
     } else {
-      selectedEntryIds.delete(entry.id);
+      selectedEntryIds.delete(entryKey(entry.id));
     }
     updateSelectionUI();
   });
@@ -355,7 +371,7 @@ async function deleteEntry(id) {
   }
 
   // Remove from selection if it was selected
-  selectedEntryIds.delete(id);
+  selectedEntryIds.delete(entryKey(id));
 
   // That prompt is available again. If the Write screen was showing the
   // all-done state, bring a fresh prompt back; otherwise leave the current
@@ -503,8 +519,10 @@ async function init() {
       flash('Select at least one entry to export');
       return;
     }
-    await Share.exportCollectionImages(entries);
-    clearSelection();
+    // Keep the selection when the export fails so the user can retry without
+    // re-picking every entry.
+    const ok = await Share.exportCollectionImages(entries);
+    if (ok) clearSelection();
   });
   el.exportPDF.addEventListener('click', async () => {
     const entries = await getSelectedEntries();
@@ -512,8 +530,8 @@ async function init() {
       flash('Select at least one entry to export');
       return;
     }
-    await Share.exportCollectionPDF(entries);
-    clearSelection();
+    const ok = await Share.exportCollectionPDF(entries);
+    if (ok) clearSelection();
   });
 }
 

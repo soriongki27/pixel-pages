@@ -169,7 +169,6 @@
           <span id="word-count" class="word-count">0 words</span>
           <button id="save-entry" class="btn btn-primary" type="button">Save Entry</button>
         </div>
-        <p id="save-msg" class="save-msg" aria-live="polite"></p>
       </section>
     </main>
 
@@ -250,6 +249,10 @@
       <button id="saved-modal-ok" class="btn btn-primary" type="button">OK</button>
     </div>
   </div>
+
+  <!-- Transient status messages. Lives at body level so it stays visible no
+       matter which view is on screen (exports run from the Notebook view). -->
+  <div id="flash-msg" class="flash-msg" role="status" aria-live="polite"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
