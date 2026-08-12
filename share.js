@@ -380,12 +380,87 @@ window.Share = (function () {
     });
   }
 
+  async function exportCollectionImages(entries) {
+    if (!entries || entries.length === 0) {
+      console.error('No entries to export');
+      return;
+    }
+
+    // Wait for fonts to load
+    if (document.fonts && document.fonts.ready) {
+      try {
+        await document.fonts.ready;
+      } catch (e) {
+        console.warn('Font loading timed out, proceeding with fallbacks');
+      }
+    }
+
+    const shareSocialBtn = document.getElementById('share-social');
+    if (shareSocialBtn && window.setBtnLoading) {
+      window.setBtnLoading(shareSocialBtn, true, 'Generating images...');
+    }
+
+    try {
+      // Pair entries into spreads
+      const spreads = [];
+      for (let i = 0; i < entries.length; i += 2) {
+        spreads.push({
+          left: entries[i],
+          right: entries[i + 1] || null,
+          leftNum: i + 1,
+          rightNum: entries[i + 1] ? i + 2 : null
+        });
+      }
+
+      // Generate each spread
+      for (let i = 0; i < spreads.length; i++) {
+        const spread = spreads[i];
+        const canvas = document.createElement('canvas');
+        canvas.width = W;
+        canvas.height = H;
+        const ctx = canvas.getContext('2d');
+
+        await renderMagazineSpread(
+          ctx,
+          spread.left,
+          spread.right,
+          spread.leftNum,
+          spread.rightNum,
+          'full'
+        );
+
+        // Convert to blob and download
+        await new Promise((resolve) => {
+          canvas.toBlob(
+            (blob) => {
+              if (blob) {
+                downloadBlob(blob, `pixel-pages-collection-${i + 1}.jpg`);
+              }
+              resolve();
+            },
+            'image/jpeg',
+            0.92
+          );
+        });
+      }
+
+      if (window.flash) {
+        window.flash(`${spreads.length} ${spreads.length === 1 ? 'image' : 'images'} downloaded!`);
+      }
+    } catch (error) {
+      console.error('Export failed:', error);
+      if (window.flash) {
+        window.flash('Export failed. Try selecting fewer entries or refresh the page.');
+      }
+    } finally {
+      if (shareSocialBtn && window.setBtnLoading) {
+        window.setBtnLoading(shareSocialBtn, false);
+      }
+    }
+  }
+
   return {
     exportStreakImage,
-    wrapText,
-    measureTextHeight,
-    drawWrappedText,
-    renderEntryCard,
-    renderMagazineSpread
+    exportCollectionImages
   };
 })();

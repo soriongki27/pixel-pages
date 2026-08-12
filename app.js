@@ -262,6 +262,7 @@ function setBtnLoading(btn, loading, loadingText) {
   }
 }
 window.setBtnLoading = setBtnLoading;
+window.flash = flash;
 
 // --- Notebook rendering ---
 async function renderNotebook() {
