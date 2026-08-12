@@ -51,6 +51,43 @@ window.Share = (function () {
     ctx.closePath();
   }
 
+  function wrapText(ctx, text, maxWidth) {
+    const words = text.split(' ');
+    const lines = [];
+    let currentLine = '';
+
+    for (let i = 0; i < words.length; i++) {
+      const testLine = currentLine + (currentLine ? ' ' : '') + words[i];
+      const metrics = ctx.measureText(testLine);
+
+      if (metrics.width > maxWidth && currentLine) {
+        lines.push(currentLine);
+        currentLine = words[i];
+      } else {
+        currentLine = testLine;
+      }
+    }
+
+    if (currentLine) {
+      lines.push(currentLine);
+    }
+
+    return lines;
+  }
+
+  function measureTextHeight(lines, lineHeight) {
+    return lines.length * lineHeight;
+  }
+
+  function drawWrappedText(ctx, lines, x, y, lineHeight) {
+    let currentY = y;
+    for (let i = 0; i < lines.length; i++) {
+      ctx.fillText(lines[i], x, currentY);
+      currentY += lineHeight;
+    }
+    return currentY;
+  }
+
   function downloadBlob(blob, filename) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -224,5 +261,10 @@ window.Share = (function () {
     });
   }
 
-  return { exportStreakImage };
+  return {
+    exportStreakImage,
+    wrapText,
+    measureTextHeight,
+    drawWrappedText
+  };
 })();
