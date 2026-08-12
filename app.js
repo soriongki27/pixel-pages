@@ -303,6 +303,11 @@ function buildEntryEl(entry) {
   checkbox.dataset.entryId = entry.id;
   checkbox.addEventListener('change', (e) => {
     if (e.target.checked) {
+      if (selectedEntryIds.size >= 50) {
+        flash('Selection limit: 50 entries maximum for optimal performance');
+        e.target.checked = false;
+        return;
+      }
       selectedEntryIds.add(entry.id);
     } else {
       selectedEntryIds.delete(entry.id);
