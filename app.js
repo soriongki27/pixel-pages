@@ -35,6 +35,13 @@ const el = {
   emptyNote:   document.getElementById('empty-note'),
   exportAll:   document.getElementById('export-all'),
   entryTotal:  document.getElementById('entry-total'),
+
+  // Selection controls
+  selectionControls: document.getElementById('selection-controls'),
+  selectionCount:    document.getElementById('selection-count'),
+  clearSelectionBtn: document.getElementById('clear-selection'),
+  shareSocial:       document.getElementById('share-social'),
+  exportPDF:         document.getElementById('export-pdf'),
 };
 
 // Holds the most recent streak data so badge visibility can be decided
@@ -51,6 +58,9 @@ let lastPromptIndex = -1;
 // on init, after every save, and after every delete. Prompts in this set are
 // never shown on the Write screen again (until their entry is deleted).
 let answeredPrompts = new Set();
+
+// Set of selected entry IDs for collection export
+let selectedEntryIds = new Set();
 
 // Active storage backend. Defaults to guest (local); auth.js swaps in a
 // cloud store when a user is signed in.
@@ -198,6 +208,40 @@ function flash(message) {
   flash._t = setTimeout(() => { el.saveMsg.textContent = ''; }, 2500);
 }
 
+// Updates visibility and content of selection controls based on selectedEntryIds
+function updateSelectionUI() {
+  const count = selectedEntryIds.size;
+  const hasSelection = count > 0;
+
+  el.exportAll.classList.toggle('hidden', hasSelection);
+  el.selectionControls.classList.toggle('hidden', !hasSelection);
+
+  if (hasSelection) {
+    el.selectionCount.textContent =
+      count + (count === 1 ? ' entry selected' : ' entries selected');
+  }
+
+  // Update selected class on entry cards
+  document.querySelectorAll('.entry').forEach((entryEl) => {
+    const checkbox = entryEl.querySelector('.entry-checkbox');
+    if (checkbox) {
+      const isSelected = selectedEntryIds.has(checkbox.dataset.entryId);
+      entryEl.classList.toggle('selected', isSelected);
+      checkbox.checked = isSelected;
+    }
+  });
+}
+
+function clearSelection() {
+  selectedEntryIds.clear();
+  updateSelectionUI();
+}
+
+async function getSelectedEntries() {
+  const allEntries = await store.getEntries();
+  return allEntries.filter((e) => selectedEntryIds.has(e.id));
+}
+
 // Shared button feedback: shows a spinner + label while an async action runs
 // and disables the button so it can't be double-fired. Restores the original
 // label when done. Used here and by auth.js.
@@ -248,6 +292,23 @@ function buildEntryEl(entry) {
   const wrap = document.createElement('article');
   wrap.className = 'entry';
 
+  // Checkbox for selection
+  const checkbox = document.createElement('input');
+  checkbox.type = 'checkbox';
+  checkbox.className = 'entry-checkbox';
+  checkbox.dataset.entryId = entry.id;
+  checkbox.addEventListener('change', (e) => {
+    if (e.target.checked) {
+      selectedEntryIds.add(entry.id);
+    } else {
+      selectedEntryIds.delete(entry.id);
+    }
+    updateSelectionUI();
+  });
+
+  const checkboxCustom = document.createElement('span');
+  checkboxCustom.className = 'entry-checkbox-custom';
+
   const meta = document.createElement('div');
   meta.className = 'entry-meta';
   const when = document.createElement('span');
@@ -271,7 +332,7 @@ function buildEntryEl(entry) {
   del.textContent = 'Delete';
   del.addEventListener('click', () => deleteEntry(entry.id));
 
-  wrap.append(meta, prompt, answer, del);
+  wrap.append(checkbox, checkboxCustom, meta, prompt, answer, del);
   return wrap;
 }
 
@@ -417,6 +478,27 @@ async function init() {
   el.navWrite.addEventListener('click', () => switchView('write'));
   el.navNotebook.addEventListener('click', () => switchView('notebook'));
   el.navStreak.addEventListener('click', () => switchView('streak'));
+
+  // Selection controls
+  el.clearSelectionBtn.addEventListener('click', clearSelection);
+  el.shareSocial.addEventListener('click', async () => {
+    const entries = await getSelectedEntries();
+    if (entries.length === 0) {
+      flash('Select at least one entry to export');
+      return;
+    }
+    await Share.exportCollectionImages(entries);
+    clearSelection();
+  });
+  el.exportPDF.addEventListener('click', async () => {
+    const entries = await getSelectedEntries();
+    if (entries.length === 0) {
+      flash('Select at least one entry to export');
+      return;
+    }
+    await Share.exportCollectionPDF(entries);
+    clearSelection();
+  });
 }
 
 init();
