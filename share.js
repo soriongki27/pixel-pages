@@ -459,8 +459,105 @@ window.Share = (function () {
     }
   }
 
+  async function exportCollectionPDF(entries) {
+    if (!entries || entries.length === 0) {
+      console.error('No entries to export');
+      return;
+    }
+
+    // Check if jsPDF is available
+    if (!window.jspdf || !window.jspdf.jsPDF) {
+      console.error('jsPDF not loaded');
+      if (window.flash) {
+        window.flash('PDF export unavailable. Check your connection.');
+      }
+      return;
+    }
+
+    // Wait for fonts to load
+    if (document.fonts && document.fonts.ready) {
+      try {
+        await document.fonts.ready;
+      } catch (e) {
+        console.warn('Font loading timed out, proceeding with fallbacks');
+      }
+    }
+
+    const exportPDFBtn = document.getElementById('export-pdf');
+    if (exportPDFBtn && window.setBtnLoading) {
+      window.setBtnLoading(exportPDFBtn, true, 'Creating PDF...');
+    }
+
+    try {
+      // Pair entries into spreads
+      const spreads = [];
+      for (let i = 0; i < entries.length; i += 2) {
+        spreads.push({
+          left: entries[i],
+          right: entries[i + 1] || null,
+          leftNum: i + 1,
+          rightNum: entries[i + 1] ? i + 2 : null
+        });
+      }
+
+      // Create PDF with portrait orientation, story dimensions
+      const pdf = new window.jspdf.jsPDF({
+        orientation: 'portrait',
+        unit: 'px',
+        format: [W, H]
+      });
+
+      // Generate each spread and add to PDF
+      for (let i = 0; i < spreads.length; i++) {
+        const spread = spreads[i];
+        const canvas = document.createElement('canvas');
+        canvas.width = W;
+        canvas.height = H;
+        const ctx = canvas.getContext('2d');
+
+        await renderMagazineSpread(
+          ctx,
+          spread.left,
+          spread.right,
+          spread.leftNum,
+          spread.rightNum,
+          'minimal' // Use minimal branding for PDF
+        );
+
+        // Add page to PDF (skip addPage for first page)
+        if (i > 0) {
+          pdf.addPage([W, H], 'portrait');
+        }
+
+        const imgData = canvas.toDataURL('image/jpeg', 0.92);
+        pdf.addImage(imgData, 'JPEG', 0, 0, W, H);
+      }
+
+      // Generate filename with current date
+      const today = new Date();
+      const dateStr = today.toISOString().split('T')[0]; // YYYY-MM-DD
+      const filename = `pixel-pages-collection-${dateStr}.pdf`;
+
+      pdf.save(filename);
+
+      if (window.flash) {
+        window.flash('PDF saved!');
+      }
+    } catch (error) {
+      console.error('PDF export failed:', error);
+      if (window.flash) {
+        window.flash("PDF creation failed. Try the 'Share to Social' option instead.");
+      }
+    } finally {
+      if (exportPDFBtn && window.setBtnLoading) {
+        window.setBtnLoading(exportPDFBtn, false);
+      }
+    }
+  }
+
   return {
     exportStreakImage,
-    exportCollectionImages
+    exportCollectionImages,
+    exportCollectionPDF
   };
 })();
