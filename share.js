@@ -51,25 +51,39 @@ window.Share = (function () {
     ctx.closePath();
   }
 
+  // Wraps text to maxWidth, preserving the author's paragraph structure.
+  // Newlines are hard breaks: each paragraph is wrapped independently and a
+  // blank source line becomes a blank output line, so multi-paragraph entries
+  // read the same on the card as they do in the notebook.
   function wrapText(ctx, text, maxWidth) {
-    const words = text.split(' ');
     const lines = [];
-    let currentLine = '';
+    const paragraphs = String(text == null ? '' : text).split(/\r?\n/);
 
-    for (let i = 0; i < words.length; i++) {
-      const testLine = currentLine + (currentLine ? ' ' : '') + words[i];
-      const metrics = ctx.measureText(testLine);
+    for (const paragraph of paragraphs) {
+      const words = paragraph.split(/[ \t]+/).filter(Boolean);
 
-      if (metrics.width > maxWidth && currentLine) {
-        lines.push(currentLine);
-        currentLine = words[i];
-      } else {
-        currentLine = testLine;
+      // Blank source line → blank output line (paragraph spacing)
+      if (words.length === 0) {
+        lines.push('');
+        continue;
       }
-    }
 
-    if (currentLine) {
-      lines.push(currentLine);
+      let currentLine = '';
+      for (let i = 0; i < words.length; i++) {
+        const testLine = currentLine + (currentLine ? ' ' : '') + words[i];
+        const metrics = ctx.measureText(testLine);
+
+        if (metrics.width > maxWidth && currentLine) {
+          lines.push(currentLine);
+          currentLine = words[i];
+        } else {
+          currentLine = testLine;
+        }
+      }
+
+      if (currentLine) {
+        lines.push(currentLine);
+      }
     }
 
     return lines;
@@ -113,7 +127,9 @@ window.Share = (function () {
       year: 'numeric', month: 'short', day: 'numeric'
     });
     const metaText = `Entry #${entryNum} • ${dateStr} • ${entry.wordCount} words`;
-    ctx.fillText(metaText, innerX, innerY + 22);
+    // maxWidth keeps the single-line meta row inside the card even when a
+    // locale produces a long date or the word count runs to five digits.
+    ctx.fillText(metaText, innerX, innerY + 22, innerW);
 
     let currentY = innerY + 22 + 12; // meta baseline + spacing
 
@@ -134,10 +150,18 @@ window.Share = (function () {
     const availableH = (y + maxH) - currentY;
 
     if (answerHeight > availableH) {
-      // Text doesn't fit - for now, just render what fits and return false
-      // (continuation logic will be added in later task if needed)
-      const maxLines = Math.floor(availableH / answerLineHeight);
+      // Text doesn't fit on this card. We render what fits and report it —
+      // multi-card continuation is future work, but truncation must never be
+      // silent (callers surface it to the user).
+      const maxLines = Math.max(0, Math.floor(availableH / answerLineHeight));
       const visibleLines = answerLines.slice(0, maxLines);
+      const droppedLines = answerLines.length - visibleLines.length;
+      console.warn(
+        `[Share] Entry #${entryNum} was truncated on the exported card: ` +
+        `${droppedLines} of ${answerLines.length} lines did not fit ` +
+        `(card height ${Math.round(h)}px). Continuation across multiple cards ` +
+        `is not implemented yet.`
+      );
       drawWrappedText(ctx, visibleLines, innerX, currentY + answerLineHeight, answerLineHeight);
       return false;
     }
@@ -166,29 +190,33 @@ window.Share = (function () {
     ctx.font = `600 48px ${SERIF}`;
     ctx.fillText('PIXEL PAGES', W / 2, 150);
 
-    // Body - two columns or single centered column
+    // Body - two columns or single centered column.
+    // Column width is derived from the canvas so the pair always fits inside
+    // the safe margin: 2 columns + gap + both margins === W.
     const bodyTop = 180;
     const bodyBottom = H - 140;
     const bodyH = bodyBottom - bodyTop;
-    const columnW = 540;
     const gap = 24;
+    const margin = 48;
+    const columnW = (W - margin * 2 - gap) / 2; // 480 at W=1080
+
+    // Tracks whether any card had to drop text so the caller can tell the user.
+    let complete = true;
 
     if (leftEntry && rightEntry) {
       // Two-column layout
-      const leftX = (W - columnW * 2 - gap) / 2;
+      const leftX = margin;
       const rightX = leftX + columnW + gap;
-      renderEntryCard(ctx, leftEntry, leftX, bodyTop, columnW, bodyH, leftNum);
-      renderEntryCard(ctx, rightEntry, rightX, bodyTop, columnW, bodyH, rightNum);
-    } else if (leftEntry) {
-      // Single centered column
+      const leftOk = renderEntryCard(ctx, leftEntry, leftX, bodyTop, columnW, bodyH, leftNum);
+      const rightOk = renderEntryCard(ctx, rightEntry, rightX, bodyTop, columnW, bodyH, rightNum);
+      complete = leftOk && rightOk;
+    } else if (leftEntry || rightEntry) {
+      // Single centered column (a lone right entry is treated the same way)
+      const entry = leftEntry || rightEntry;
+      const num = leftEntry ? leftNum : rightNum;
       const centerW = 640;
       const centerX = (W - centerW) / 2;
-      renderEntryCard(ctx, leftEntry, centerX, bodyTop, centerW, bodyH, leftNum);
-    } else if (rightEntry) {
-      // Edge case: only right entry (treat as single centered)
-      const centerW = 640;
-      const centerX = (W - centerW) / 2;
-      renderEntryCard(ctx, rightEntry, centerX, bodyTop, centerW, bodyH, rightNum);
+      complete = renderEntryCard(ctx, entry, centerX, bodyTop, centerW, bodyH, num);
     }
 
     // Footer
@@ -205,6 +233,8 @@ window.Share = (function () {
       ctx.font = `600 36px ${SERIF}`;
       ctx.fillText('PIXEL PAGES', W / 2, H - 60);
     }
+
+    return complete;
   }
 
   function downloadBlob(blob, filename) {
@@ -380,10 +410,13 @@ window.Share = (function () {
     });
   }
 
+  // Returns true when every spread was generated and downloaded, false when
+  // the export bailed out. Callers rely on this to decide whether it's safe to
+  // discard the user's selection.
   async function exportCollectionImages(entries) {
     if (!entries || entries.length === 0) {
       console.error('No entries to export');
-      return;
+      return false;
     }
 
     // Wait for fonts to load
@@ -413,6 +446,7 @@ window.Share = (function () {
       }
 
       // Generate each spread
+      let truncated = false;
       for (let i = 0; i < spreads.length; i++) {
         const spread = spreads[i];
         const canvas = document.createElement('canvas');
@@ -420,7 +454,7 @@ window.Share = (function () {
         canvas.height = H;
         const ctx = canvas.getContext('2d');
 
-        await renderMagazineSpread(
+        const complete = await renderMagazineSpread(
           ctx,
           spread.left,
           spread.right,
@@ -428,6 +462,7 @@ window.Share = (function () {
           spread.rightNum,
           'full'
         );
+        if (!complete) truncated = true;
 
         // Convert to blob and download
         await new Promise((resolve) => {
@@ -445,13 +480,20 @@ window.Share = (function () {
       }
 
       if (window.flash) {
-        window.flash(`${spreads.length} ${spreads.length === 1 ? 'image' : 'images'} downloaded!`);
+        const label = `${spreads.length} ${spreads.length === 1 ? 'image' : 'images'} downloaded!`;
+        window.flash(
+          truncated
+            ? label + ' Some long entries were shortened to fit.'
+            : label
+        );
       }
+      return true;
     } catch (error) {
       console.error('Export failed:', error);
       if (window.flash) {
         window.flash('Export failed. Try selecting fewer entries or refresh the page.');
       }
+      return false;
     } finally {
       if (shareSocialBtn && window.setBtnLoading) {
         window.setBtnLoading(shareSocialBtn, false);
@@ -459,10 +501,11 @@ window.Share = (function () {
     }
   }
 
+  // Returns true when the PDF was produced and saved, false otherwise.
   async function exportCollectionPDF(entries) {
     if (!entries || entries.length === 0) {
       console.error('No entries to export');
-      return;
+      return false;
     }
 
     // Check if jsPDF is available
@@ -471,7 +514,7 @@ window.Share = (function () {
       if (window.flash) {
         window.flash('PDF export unavailable. Check your connection.');
       }
-      return;
+      return false;
     }
 
     // Wait for fonts to load
@@ -508,6 +551,7 @@ window.Share = (function () {
       });
 
       // Generate each spread and add to PDF
+      let truncated = false;
       for (let i = 0; i < spreads.length; i++) {
         const spread = spreads[i];
         const canvas = document.createElement('canvas');
@@ -515,7 +559,7 @@ window.Share = (function () {
         canvas.height = H;
         const ctx = canvas.getContext('2d');
 
-        await renderMagazineSpread(
+        const complete = await renderMagazineSpread(
           ctx,
           spread.left,
           spread.right,
@@ -523,6 +567,7 @@ window.Share = (function () {
           spread.rightNum,
           'minimal' // Use minimal branding for PDF
         );
+        if (!complete) truncated = true;
 
         // Add page to PDF (skip addPage for first page)
         if (i > 0) {
@@ -541,13 +586,19 @@ window.Share = (function () {
       pdf.save(filename);
 
       if (window.flash) {
-        window.flash('PDF saved!');
+        window.flash(
+          truncated
+            ? 'PDF saved! Some long entries were shortened to fit.'
+            : 'PDF saved!'
+        );
       }
+      return true;
     } catch (error) {
       console.error('PDF export failed:', error);
       if (window.flash) {
         window.flash("PDF creation failed. Try the 'Share to Social' option instead.");
       }
+      return false;
     } finally {
       if (exportPDFBtn && window.setBtnLoading) {
         window.setBtnLoading(exportPDFBtn, false);
@@ -558,6 +609,10 @@ window.Share = (function () {
   return {
     exportStreakImage,
     exportCollectionImages,
-    exportCollectionPDF
+    exportCollectionPDF,
+    // Exposed for the text-rendering test harness (test-text-utils.html)
+    wrapText,
+    measureTextHeight,
+    drawWrappedText
   };
 })();
