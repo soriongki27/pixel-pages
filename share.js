@@ -146,6 +146,67 @@ window.Share = (function () {
     return true;
   }
 
+  async function renderMagazineSpread(ctx, leftEntry, rightEntry, leftNum, rightNum, brandingMode) {
+    // Background
+    drawBackground(ctx);
+
+    // Header - logo + wordmark
+    const logo = await loadImage('logo-256.png');
+    if (logo) {
+      const logoSize = 80;
+      ctx.save();
+      ctx.shadowColor = 'rgba(217, 119, 87, 0.45)';
+      ctx.shadowBlur = 40;
+      ctx.drawImage(logo, (W - logoSize) / 2, 30, logoSize, logoSize);
+      ctx.restore();
+    }
+
+    ctx.textAlign = 'center';
+    ctx.fillStyle = C.text;
+    ctx.font = `600 48px ${SERIF}`;
+    ctx.fillText('PIXEL PAGES', W / 2, 150);
+
+    // Body - two columns or single centered column
+    const bodyTop = 180;
+    const bodyBottom = H - 140;
+    const bodyH = bodyBottom - bodyTop;
+    const columnW = 540;
+    const gap = 24;
+
+    if (leftEntry && rightEntry) {
+      // Two-column layout
+      const leftX = (W - columnW * 2 - gap) / 2;
+      const rightX = leftX + columnW + gap;
+      renderEntryCard(ctx, leftEntry, leftX, bodyTop, columnW, bodyH, leftNum);
+      renderEntryCard(ctx, rightEntry, rightX, bodyTop, columnW, bodyH, rightNum);
+    } else if (leftEntry) {
+      // Single centered column
+      const centerW = 640;
+      const centerX = (W - centerW) / 2;
+      renderEntryCard(ctx, leftEntry, centerX, bodyTop, centerW, bodyH, leftNum);
+    } else if (rightEntry) {
+      // Edge case: only right entry (treat as single centered)
+      const centerW = 640;
+      const centerX = (W - centerW) / 2;
+      renderEntryCard(ctx, rightEntry, centerX, bodyTop, centerW, bodyH, rightNum);
+    }
+
+    // Footer
+    ctx.textAlign = 'center';
+    ctx.fillStyle = C.tan;
+
+    if (brandingMode === 'full') {
+      ctx.font = `italic 400 28px ${SERIF}`;
+      ctx.fillText('a cozy corner for daily reflection', W / 2, H - 90);
+      ctx.font = `500 32px ${SANS}`;
+      ctx.fillText('pixel-pages.vercel.app', W / 2, H - 50);
+    } else {
+      // Minimal branding for PDF
+      ctx.font = `600 36px ${SERIF}`;
+      ctx.fillText('PIXEL PAGES', W / 2, H - 60);
+    }
+  }
+
   function downloadBlob(blob, filename) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -324,6 +385,7 @@ window.Share = (function () {
     wrapText,
     measureTextHeight,
     drawWrappedText,
-    renderEntryCard
+    renderEntryCard,
+    renderMagazineSpread
   };
 })();
