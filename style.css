@@ -578,13 +578,35 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-.save-msg {
+/* Status toast — fixed to the viewport so it's visible from any view */
+.flash-msg {
+  position: fixed;
+  left: 50%;
+  bottom: 28px;
+  transform: translate(-50%, 12px);
+  z-index: 60;
+  max-width: min(520px, calc(100vw - 32px));
+  padding: 12px 20px;
+  border: 1px solid var(--hair);
+  border-radius: var(--r);
+  background: var(--surface);
+  box-shadow: var(--shadow-soft);
   font-family: var(--sans);
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   font-weight: 500;
+  line-height: 1.4;
   color: var(--sage);
-  min-height: 1.2em;
-  margin: 14px 0 0;
+  text-align: center;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
+}
+
+.flash-msg.is-visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(-50%, 0);
 }
 
 /* ---------- Notebook ---------- */
@@ -981,25 +1003,29 @@ body {
 
 /* ========== Collection Export Selection ========== */
 
-/* Entry checkbox */
+/* Entry checkbox.
+   The checkbox is absolutely positioned in the card's left gutter; the card
+   gets extra left padding so the metadata row can't run underneath it. */
 .entry {
   position: relative;
+  padding-left: 56px;
 }
 
 .entry-checkbox {
   position: absolute;
-  top: 16px;
-  left: 16px;
+  top: 20px;
+  left: 18px;
   width: 22px;
   height: 22px;
   cursor: pointer;
   opacity: 0;
+  z-index: 1;
 }
 
 .entry-checkbox-custom {
   position: absolute;
-  top: 16px;
-  left: 16px;
+  top: 20px;
+  left: 18px;
   width: 22px;
   height: 22px;
   border: 2px solid var(--tan);
