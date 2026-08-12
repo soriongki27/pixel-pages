@@ -169,7 +169,6 @@
           <span id="word-count" class="word-count">0 words</span>
           <button id="save-entry" class="btn btn-primary" type="button">Save Entry</button>
         </div>
-        <p id="save-msg" class="save-msg" aria-live="polite"></p>
       </section>
     </main>
 
@@ -177,7 +176,15 @@
     <main id="view-notebook" class="view hidden">
       <div class="notebook-head">
         <h2 class="label">Your Notebook</h2>
-        <button id="export-all" class="btn" type="button">Export All</button>
+        <div class="notebook-controls">
+          <button id="export-all" class="btn" type="button">Export All</button>
+          <div id="selection-controls" class="selection-controls hidden">
+            <span id="selection-count" class="selection-count">0 entries selected</span>
+            <button id="clear-selection" class="btn-link" type="button">Clear selection</button>
+            <button id="share-social" class="btn btn-primary" type="button">Share to Social</button>
+            <button id="export-pdf" class="btn" type="button">Export PDF</button>
+          </div>
+        </div>
       </div>
       <div id="entries" class="entries"></div>
       <p id="empty-note" class="empty-note hidden">
@@ -243,7 +250,12 @@
     </div>
   </div>
 
+  <!-- Transient status messages. Lives at body level so it stays visible no
+       matter which view is on screen (exports run from the Notebook view). -->
+  <div id="flash-msg" class="flash-msg" role="status" aria-live="polite"></div>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="config.js"></script>
   <script src="prompts.js"></script>
   <script src="store.js"></script>

@@ -26,7 +26,7 @@ const el = {
   answer:      document.getElementById('answer'),
   wordCount:   document.getElementById('word-count'),
   saveEntry:   document.getElementById('save-entry'),
-  saveMsg:     document.getElementById('save-msg'),
+  flashMsg:    document.getElementById('flash-msg'),
 
   savedModal:  document.getElementById('saved-modal'),
   savedModalOk:document.getElementById('saved-modal-ok'),
@@ -35,6 +35,13 @@ const el = {
   emptyNote:   document.getElementById('empty-note'),
   exportAll:   document.getElementById('export-all'),
   entryTotal:  document.getElementById('entry-total'),
+
+  // Selection controls
+  selectionControls: document.getElementById('selection-controls'),
+  selectionCount:    document.getElementById('selection-count'),
+  clearSelectionBtn: document.getElementById('clear-selection'),
+  shareSocial:       document.getElementById('share-social'),
+  exportPDF:         document.getElementById('export-pdf'),
 };
 
 // Holds the most recent streak data so badge visibility can be decided
@@ -51,6 +58,17 @@ let lastPromptIndex = -1;
 // on init, after every save, and after every delete. Prompts in this set are
 // never shown on the Write screen again (until their entry is deleted).
 let answeredPrompts = new Set();
+
+// Set of selected entry IDs for collection export. Entry ids are opaque and
+// backend-dependent — LocalStore uses numbers (Date.now()), CloudStore uses
+// uuid strings — and DOM datasets are always strings, so every id is
+// normalised through entryKey() before it touches this set.
+let selectedEntryIds = new Set();
+
+// Canonical key for an entry id, regardless of backend or DOM round-tripping.
+function entryKey(id) {
+  return String(id);
+}
 
 // Active storage backend. Defaults to guest (local); auth.js swaps in a
 // cloud store when a user is signed in.
@@ -192,10 +210,52 @@ function hideSavedModal() {
   el.savedModal.classList.add('hidden');
 }
 
+// Transient status toast. Rendered outside every view so messages raised from
+// the Notebook (exports) or an auth screen are actually seen.
 function flash(message) {
-  el.saveMsg.textContent = message;
+  // Reveal the live region before the text changes so screen readers announce
+  // it (a visibility:hidden region is outside the accessibility tree).
+  el.flashMsg.classList.toggle('is-visible', !!message);
+  el.flashMsg.textContent = message;
   clearTimeout(flash._t);
-  flash._t = setTimeout(() => { el.saveMsg.textContent = ''; }, 2500);
+  flash._t = setTimeout(() => {
+    el.flashMsg.textContent = '';
+    el.flashMsg.classList.remove('is-visible');
+  }, 3500);
+}
+
+// Updates visibility and content of selection controls based on selectedEntryIds
+function updateSelectionUI() {
+  const count = selectedEntryIds.size;
+  const hasSelection = count > 0;
+
+  el.exportAll.classList.toggle('hidden', hasSelection);
+  el.selectionControls.classList.toggle('hidden', !hasSelection);
+
+  if (hasSelection) {
+    el.selectionCount.textContent =
+      count + (count === 1 ? ' entry selected' : ' entries selected');
+  }
+
+  // Update selected class on entry cards
+  document.querySelectorAll('.entry').forEach((entryEl) => {
+    const checkbox = entryEl.querySelector('.entry-checkbox');
+    if (checkbox) {
+      const isSelected = selectedEntryIds.has(entryKey(checkbox.dataset.entryId));
+      entryEl.classList.toggle('selected', isSelected);
+      checkbox.checked = isSelected;
+    }
+  });
+}
+
+function clearSelection() {
+  selectedEntryIds.clear();
+  updateSelectionUI();
+}
+
+async function getSelectedEntries() {
+  const allEntries = await store.getEntries();
+  return allEntries.filter((e) => selectedEntryIds.has(entryKey(e.id)));
 }
 
 // Shared button feedback: shows a spinner + label while an async action runs
@@ -218,6 +278,7 @@ function setBtnLoading(btn, loading, loadingText) {
   }
 }
 window.setBtnLoading = setBtnLoading;
+window.flash = flash;
 
 // --- Notebook rendering ---
 async function renderNotebook() {
@@ -242,11 +303,36 @@ async function renderNotebook() {
   for (const entry of entries) {
     el.entries.appendChild(buildEntryEl(entry));
   }
+
+  // Update selection UI to reflect current state
+  updateSelectionUI();
 }
 
 function buildEntryEl(entry) {
   const wrap = document.createElement('article');
   wrap.className = 'entry';
+
+  // Checkbox for selection
+  const checkbox = document.createElement('input');
+  checkbox.type = 'checkbox';
+  checkbox.className = 'entry-checkbox';
+  checkbox.dataset.entryId = entry.id;
+  checkbox.addEventListener('change', (e) => {
+    if (e.target.checked) {
+      if (selectedEntryIds.size >= 50) {
+        flash('Selection limit: 50 entries maximum for optimal performance');
+        e.target.checked = false;
+        return;
+      }
+      selectedEntryIds.add(entryKey(entry.id));
+    } else {
+      selectedEntryIds.delete(entryKey(entry.id));
+    }
+    updateSelectionUI();
+  });
+
+  const checkboxCustom = document.createElement('span');
+  checkboxCustom.className = 'entry-checkbox-custom';
 
   const meta = document.createElement('div');
   meta.className = 'entry-meta';
@@ -271,7 +357,7 @@ function buildEntryEl(entry) {
   del.textContent = 'Delete';
   del.addEventListener('click', () => deleteEntry(entry.id));
 
-  wrap.append(meta, prompt, answer, del);
+  wrap.append(checkbox, checkboxCustom, meta, prompt, answer, del);
   return wrap;
 }
 
@@ -283,6 +369,10 @@ async function deleteEntry(id) {
     flash("Couldn't delete — check your connection and try again.");
     return;
   }
+
+  // Remove from selection if it was selected
+  selectedEntryIds.delete(entryKey(id));
+
   // That prompt is available again. If the Write screen was showing the
   // all-done state, bring a fresh prompt back; otherwise leave the current
   // prompt untouched so we don't interrupt any in-progress writing.
@@ -290,6 +380,9 @@ async function deleteEntry(id) {
   if (!el.allDone.classList.contains('hidden')) showRandomPrompt();
   renderNotebook();
   renderStreak();
+
+  // Update selection UI to reflect new state
+  updateSelectionUI();
 }
 
 // --- Export ---
@@ -417,6 +510,29 @@ async function init() {
   el.navWrite.addEventListener('click', () => switchView('write'));
   el.navNotebook.addEventListener('click', () => switchView('notebook'));
   el.navStreak.addEventListener('click', () => switchView('streak'));
+
+  // Selection controls
+  el.clearSelectionBtn.addEventListener('click', clearSelection);
+  el.shareSocial.addEventListener('click', async () => {
+    const entries = await getSelectedEntries();
+    if (entries.length === 0) {
+      flash('Select at least one entry to export');
+      return;
+    }
+    // Keep the selection when the export fails so the user can retry without
+    // re-picking every entry.
+    const ok = await Share.exportCollectionImages(entries);
+    if (ok) clearSelection();
+  });
+  el.exportPDF.addEventListener('click', async () => {
+    const entries = await getSelectedEntries();
+    if (entries.length === 0) {
+      flash('Select at least one entry to export');
+      return;
+    }
+    const ok = await Share.exportCollectionPDF(entries);
+    if (ok) clearSelection();
+  });
 }
 
 init();
