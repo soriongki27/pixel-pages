@@ -344,6 +344,10 @@ async function deleteEntry(id) {
     flash("Couldn't delete — check your connection and try again.");
     return;
   }
+
+  // Remove from selection if it was selected
+  selectedEntryIds.delete(id);
+
   // That prompt is available again. If the Write screen was showing the
   // all-done state, bring a fresh prompt back; otherwise leave the current
   // prompt untouched so we don't interrupt any in-progress writing.
@@ -351,6 +355,9 @@ async function deleteEntry(id) {
   if (!el.allDone.classList.contains('hidden')) showRandomPrompt();
   renderNotebook();
   renderStreak();
+
+  // Update selection UI to reflect new state
+  updateSelectionUI();
 }
 
 // --- Export ---
