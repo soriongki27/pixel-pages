@@ -88,6 +88,64 @@ window.Share = (function () {
     return currentY;
   }
 
+  function renderEntryCard(ctx, entry, x, y, w, h, entryNum) {
+    const pad = 32;
+    const innerX = x + pad;
+    const innerY = y + pad;
+    const innerW = w - pad * 2;
+    const maxH = h - pad * 2;
+
+    // Draw card background
+    ctx.fillStyle = 'rgba(50, 68, 58, 0.55)';
+    roundRect(ctx, x, y, w, h, 28);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(194, 168, 120, 0.22)';
+    ctx.lineWidth = 2;
+    roundRect(ctx, x, y, w, h, 28);
+    ctx.stroke();
+
+    // Metadata row
+    ctx.textAlign = 'left';
+    ctx.fillStyle = C.tan;
+    ctx.font = `500 22px ${SANS}`;
+    const date = new Date(entry.timestamp);
+    const dateStr = date.toLocaleDateString(undefined, {
+      year: 'numeric', month: 'short', day: 'numeric'
+    });
+    const metaText = `Entry #${entryNum} • ${dateStr} • ${entry.wordCount} words`;
+    ctx.fillText(metaText, innerX, innerY + 22);
+
+    let currentY = innerY + 22 + 12; // meta baseline + spacing
+
+    // Prompt
+    ctx.fillStyle = C.text;
+    ctx.font = `500 34px ${SERIF}`;
+    const promptLines = wrapText(ctx, entry.prompt, innerW);
+    const promptLineHeight = 44;
+    currentY = drawWrappedText(ctx, promptLines, innerX, currentY + promptLineHeight, promptLineHeight);
+    currentY += 20; // spacing after prompt
+
+    // Answer
+    ctx.font = `400 26px ${SERIF}`;
+    const answerLines = wrapText(ctx, entry.answer, innerW);
+    const answerLineHeight = 42;
+    const answerHeight = measureTextHeight(answerLines, answerLineHeight);
+
+    const availableH = (y + maxH) - currentY;
+
+    if (answerHeight > availableH) {
+      // Text doesn't fit - for now, just render what fits and return false
+      // (continuation logic will be added in later task if needed)
+      const maxLines = Math.floor(availableH / answerLineHeight);
+      const visibleLines = answerLines.slice(0, maxLines);
+      drawWrappedText(ctx, visibleLines, innerX, currentY + answerLineHeight, answerLineHeight);
+      return false;
+    }
+
+    drawWrappedText(ctx, answerLines, innerX, currentY + answerLineHeight, answerLineHeight);
+    return true;
+  }
+
   function downloadBlob(blob, filename) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -265,6 +323,7 @@ window.Share = (function () {
     exportStreakImage,
     wrapText,
     measureTextHeight,
-    drawWrappedText
+    drawWrappedText,
+    renderEntryCard
   };
 })();
