@@ -287,6 +287,9 @@ async function renderNotebook() {
   for (const entry of entries) {
     el.entries.appendChild(buildEntryEl(entry));
   }
+
+  // Update selection UI to reflect current state
+  updateSelectionUI();
 }
 
 function buildEntryEl(entry) {
