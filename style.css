@@ -978,3 +978,91 @@ body {
   .modal-overlay,
   .modal-card { animation: none; }
 }
+
+/* ========== Collection Export Selection ========== */
+
+/* Entry checkbox */
+.entry {
+  position: relative;
+}
+
+.entry-checkbox {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  width: 22px;
+  height: 22px;
+  cursor: pointer;
+  opacity: 0;
+}
+
+.entry-checkbox-custom {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  width: 22px;
+  height: 22px;
+  border: 2px solid var(--tan);
+  border-radius: var(--r-sm);
+  background: var(--field);
+  pointer-events: none;
+  transition: all 0.2s ease;
+}
+
+.entry-checkbox:checked + .entry-checkbox-custom {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.entry-checkbox:checked + .entry-checkbox-custom::after {
+  content: '✓';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: var(--bg);
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.entry.selected {
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
+/* Selection controls */
+.notebook-controls {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.selection-controls {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.selection-count {
+  font-family: var(--sans);
+  font-size: 0.95rem;
+  color: var(--tan);
+  font-weight: 500;
+}
+
+.btn-link {
+  background: none;
+  border: none;
+  color: var(--tan);
+  font-family: var(--sans);
+  font-size: 0.9rem;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+  transition: color 0.2s ease;
+}
+
+.btn-link:hover {
+  color: var(--text);
+}
